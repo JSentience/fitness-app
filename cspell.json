@@ -1,0 +1,20 @@
+{
+  "language": "en,ru",
+  "dictionaries": [
+    "ru_ru"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "ru_ru",
+      "path": "./node_modules/@cspell/dict-ru_ru/ru_ru.trie.gz"
+    }
+  ],
+  "userWords": [
+    "roboto",
+    "nowrap",
+    "rgba",
+    "Бодифлекс",
+    "bodyflex",
+    "Sparcle"
+  ]
+}
