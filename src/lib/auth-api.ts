@@ -1,0 +1,143 @@
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_FITNESS_API_URL?.replace(/\/$/, "") ||
+  "https://wedev-api.sky.pro/api/fitness";
+
+export type RegisterPayload = {
+  email: string;
+  password: string;
+};
+
+export type RegisterResponse = {
+  message: string;
+};
+
+export type LoginPayload = {
+  email: string;
+  password: string;
+};
+
+export type LoginResponse = {
+  token: string;
+};
+
+export type MeResponse = {
+  email: string;
+  name?: string;
+  selectedCourses: string[];
+};
+
+export type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+};
+
+function getApiErrorMessage(data: unknown): string | null {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+
+  if ("message" in data && typeof data.message === "string") {
+    return data.message;
+  }
+
+  if ("error" in data && typeof data.error === "string") {
+    return data.error;
+  }
+
+  return null;
+}
+
+class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+type RequestOptions = {
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  body?: unknown;
+  token?: string;
+  cache?: RequestCache;
+};
+
+async function request<T>(
+  endpoint: string,
+  { method = "GET", body, token, cache }: RequestOptions = {},
+): Promise<T> {
+  const headers: HeadersInit = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+    cache,
+  });
+
+  const rawText = await response.text();
+  let data: T | ApiErrorResponse | null = null;
+
+  if (rawText) {
+    try {
+      data = JSON.parse(rawText) as T | ApiErrorResponse;
+    } catch {
+      data = null;
+    }
+  }
+
+  if (!response.ok) {
+    const message = getApiErrorMessage(data);
+
+    throw new ApiError(
+      message ||
+        `Ошибка запроса к ${endpoint}: ${response.status} ${response.statusText}`,
+      response.status,
+    );
+  }
+
+  if (data === null) {
+    throw new ApiError(`Пустой ответ от API для ${endpoint}`, response.status);
+  }
+
+  return data as T;
+}
+
+export async function registerUser(
+  payload: RegisterPayload,
+): Promise<RegisterResponse> {
+  return request<RegisterResponse>("/auth/register", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function loginUser(payload: LoginPayload): Promise<LoginResponse> {
+  return request<LoginResponse>("/auth/login", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function getCurrentUser(token: string): Promise<MeResponse> {
+  return request<MeResponse>("/users/me", {
+    method: "GET",
+    token,
+  });
+}
+
+export async function getCurrentUserServer(token: string): Promise<MeResponse> {
+  return request<MeResponse>("/users/me", {
+    method: "GET",
+    token,
+    cache: "no-store",
+  });
+}
+
+export { API_BASE_URL, ApiError };

@@ -1,0 +1,21 @@
+import type { Course } from "@/types/course.type";
+
+export type ProfileCourseState = {
+  course: Course;
+  isRemoving: boolean;
+  error: string;
+};
+
+export type ProgressValueMap = Record<string, string>;
+
+export type WorkoutListItem = {
+  _id: string;
+  name: string;
+  dayIndex: number;
+};
+
+export type WorkoutStat = {
+  label: string;
+  value: string;
+  icon: string;
+};

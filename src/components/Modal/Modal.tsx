@@ -1,59 +1,100 @@
 "use client";
 
+import { useAuthStore } from "@/store/auth.store";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type ModalProps = {
   isOpen: boolean;
-  onClose: () => void;
+  closeAction: () => void;
 };
 
 type AuthMode = "login" | "register";
 
-export const Modal = ({ isOpen, onClose }: ModalProps) => {
+export const Modal = ({ isOpen, closeAction }: ModalProps) => {
   const [mode, setMode] = useState<AuthMode>("login");
-  const [login, setLogin] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
-  const [error, setError] = useState("");
 
-  if (!isOpen) return null;
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const error = useAuthStore((state) => state.error);
+  const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
+  const clearError = useAuthStore((state) => state.clearError);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    clearError();
+  }, [isOpen, clearError]);
+
+  const resetForm = () => {
+    setMode("login");
+    setLoginEmail("");
+    setRegisterEmail("");
+    setLoginPassword("");
+    setRegisterPassword("");
+    setRepeatPassword("");
+    clearError();
+  };
 
   const handleClose = () => {
-    onClose();
-    setMode("login");
-    setError("");
+    closeAction();
+    resetForm();
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("Пароль введен неверно, попробуйте еще раз.");
+    await login({
+      email: loginEmail.trim(),
+      password: loginPassword,
+    });
+    handleClose();
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("Данная почта уже используется. Попробуйте войти.");
+
+    if (registerPassword !== repeatPassword) {
+      return;
+    }
+
+    await register({
+      email: registerEmail.trim(),
+      password: registerPassword,
+    });
+    handleClose();
   };
 
   const switchToRegister = () => {
     setMode("register");
-    setError("");
+    clearError();
   };
 
   const switchToLogin = () => {
     setMode("login");
-    setError("");
+    clearError();
   };
 
+  const passwordsMismatch =
+    mode === "register" &&
+    repeatPassword.length > 0 &&
+    registerPassword !== repeatPassword;
+
+  const currentError = passwordsMismatch ? "Пароли не совпадают." : error;
+
   const inputBase =
-    "w-full px-4.5 py-4 text-lg leading-[1.1] border rounded-lg outline-none placeholder:text-[#D0CECE] focus:border-black transition-colors";
+    "w-full px-4.5 py-4 text-lg leading-[1.1] border rounded-lg outline-none placeholder:text-[#D0CECE] focus:border-black transition-colors disabled:bg-[#F7F7F7] disabled:text-[#999999]";
 
   const btnPrimary =
-    "w-full py-4 px-6.5 bg-[#BCEC30] text-black text-lg leading-[1.1] rounded-[46px] hover:bg-[#C6FF00] active:bg-[#BCEC30] transition-colors";
+    "w-full py-4 px-6.5 bg-[#BCEC30] text-black text-lg leading-[1.1] rounded-[46px] hover:bg-[#C6FF00] active:bg-[#BCEC30] transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
 
   const btnOutline =
-    "w-full py-4 px-6.5 border border-black text-black text-lg leading-[1.1] rounded-[46px] hover:bg-[#F7F7F7] active:bg-[#E9ECED] transition-colors";
+    "w-full py-4 px-6.5 border border-black text-black text-lg leading-[1.1] rounded-[46px] hover:bg-[#F7F7F7] active:bg-[#E9ECED] transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -64,16 +105,14 @@ export const Modal = ({ isOpen, onClose }: ModalProps) => {
         className="flex flex-col items-center gap-12 p-10 bg-white rounded-[30px] shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)] w-90"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Logo */}
         <Image
-          src="/images/logo.svg"
+          src="/brand/logo.svg"
           alt="SkyFitnessPro"
           width={220}
           height={35}
           priority
         />
 
-        {/* Login form */}
         {mode === "login" && (
           <form
             className="flex flex-col items-center gap-8.5 w-full"
@@ -81,37 +120,45 @@ export const Modal = ({ isOpen, onClose }: ModalProps) => {
           >
             <div className="flex flex-col gap-2.5 w-full">
               <input
-                type="text"
-                placeholder="Логин"
-                value={login}
-                onChange={(e) => setLogin(e.target.value)}
+                type="email"
+                placeholder="Эл. почта"
+                value={loginEmail}
+                onChange={(e) => {
+                  setLoginEmail(e.target.value);
+                  clearError();
+                }}
                 className={`${inputBase} border-[#D0CECE]`}
+                disabled={isLoading}
               />
               <input
                 type="password"
                 placeholder="Пароль"
-                value={password}
+                value={loginPassword}
                 onChange={(e) => {
-                  setPassword(e.target.value);
-                  setError("");
+                  setLoginPassword(e.target.value);
+                  clearError();
                 }}
-                className={`${inputBase} ${error ? "border-[#DB0030]" : "border-[#D0CECE]"}`}
+                className={`${inputBase} ${
+                  currentError ? "border-[#DB0030]" : "border-[#D0CECE]"
+                }`}
+                disabled={isLoading}
               />
-              {error && (
+              {currentError && (
                 <p className="text-sm text-[#DB0030] leading-[1.1] text-center">
-                  {error}
+                  {currentError}
                 </p>
               )}
             </div>
 
             <div className="flex flex-col gap-2.5 w-full">
-              <button type="submit" className={btnPrimary}>
-                Войти
+              <button type="submit" className={btnPrimary} disabled={isLoading}>
+                {isLoading ? "Входим..." : "Войти"}
               </button>
               <button
                 type="button"
                 onClick={switchToRegister}
                 className={btnOutline}
+                disabled={isLoading}
               >
                 Зарегистрироваться
               </button>
@@ -119,7 +166,6 @@ export const Modal = ({ isOpen, onClose }: ModalProps) => {
           </form>
         )}
 
-        {/* Register form */}
         {mode === "register" && (
           <form
             className="flex flex-col items-center gap-8.5 w-full"
@@ -129,42 +175,62 @@ export const Modal = ({ isOpen, onClose }: ModalProps) => {
               <input
                 type="email"
                 placeholder="Эл. почта"
-                value={email}
+                value={registerEmail}
                 onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError("");
+                  setRegisterEmail(e.target.value);
+                  clearError();
                 }}
-                className={`${inputBase} ${error ? "border-[#DB0030]" : "border-[#D0CECE]"}`}
+                className={`${inputBase} ${
+                  currentError ? "border-[#DB0030]" : "border-[#D0CECE]"
+                }`}
+                disabled={isLoading}
               />
               <input
                 type="password"
                 placeholder="Пароль"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`${inputBase} border-[#D0CECE]`}
+                value={registerPassword}
+                onChange={(e) => {
+                  setRegisterPassword(e.target.value);
+                  clearError();
+                }}
+                className={`${inputBase} ${
+                  currentError ? "border-[#DB0030]" : "border-[#D0CECE]"
+                }`}
+                disabled={isLoading}
               />
               <input
                 type="password"
                 placeholder="Повторите пароль"
                 value={repeatPassword}
-                onChange={(e) => setRepeatPassword(e.target.value)}
-                className={`${inputBase} border-[#D0CECE]`}
+                onChange={(e) => {
+                  setRepeatPassword(e.target.value);
+                  clearError();
+                }}
+                className={`${inputBase} ${
+                  currentError ? "border-[#DB0030]" : "border-[#D0CECE]"
+                }`}
+                disabled={isLoading}
               />
-              {error && (
+              {currentError && (
                 <p className="text-sm text-[#DB0030] leading-[1.1] text-center">
-                  {error}
+                  {currentError}
                 </p>
               )}
             </div>
 
             <div className="flex flex-col gap-2.5 w-full">
-              <button type="submit" className={btnPrimary}>
-                Зарегистрироваться
+              <button
+                type="submit"
+                className={btnPrimary}
+                disabled={isLoading || passwordsMismatch}
+              >
+                {isLoading ? "Регистрируем..." : "Зарегистрироваться"}
               </button>
               <button
                 type="button"
                 onClick={switchToLogin}
                 className={btnOutline}
+                disabled={isLoading}
               >
                 Войти
               </button>
