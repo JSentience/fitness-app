@@ -2,7 +2,7 @@ import Image from "next/image";
 
 import { getCourseImage } from "@/lib/courseImages";
 import { getDifficultyIcon, normalizeDifficultyLabel } from "@/lib/difficulty";
-import type { Course } from "@/types/course.type";
+import type { Course } from "@/types/course.types";
 
 type CourseCardProps = {
   course: Course;

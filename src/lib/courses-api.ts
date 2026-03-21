@@ -1,4 +1,4 @@
-import type { Course } from "@/types/course.type";
+import type { Course } from "@/types/course.types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_FITNESS_API_URL?.replace(/\/$/, "") ||

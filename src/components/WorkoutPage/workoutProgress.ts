@@ -1,5 +1,5 @@
 import type { CourseProgress } from "@/lib/workouts-api";
-import type { ProgressValueMap } from "./types";
+import type { ProgressValueMap } from "./workout-page.types";
 
 function getProgressStorageKey(workoutId: string): string {
   return `fitness-workout-progress-${workoutId}`;

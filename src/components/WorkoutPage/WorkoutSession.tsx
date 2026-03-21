@@ -1,6 +1,6 @@
 import { ExercisesPanel } from "./ExercisesPanel";
 import { WorkoutVideoPlayer } from "./WorkoutVideoPlayer";
-import type { ProgressValueMap } from "./types";
+import type { ProgressValueMap } from "./workout-page.types";
 import type { Workout } from "@/lib/workouts-api";
 
 type WorkoutSessionProps = {

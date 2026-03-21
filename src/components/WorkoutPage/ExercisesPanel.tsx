@@ -1,7 +1,7 @@
 "use client";
 
 import type { Exercise } from "@/lib/workouts-api";
-import type { ProgressValueMap } from "./types";
+import type { ProgressValueMap } from "./workout-page.types";
 
 type ExercisesPanelProps = {
   workoutName: string;

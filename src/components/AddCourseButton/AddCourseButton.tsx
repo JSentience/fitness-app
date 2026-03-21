@@ -1,10 +1,10 @@
 "use client";
 
+import { ClientApiError } from "@/lib/client-api";
 import {
-  ApiError,
-  addUserCourse,
-  removeUserCourse,
-} from "@/lib/user-courses-api";
+  addUserCourseClient,
+  removeUserCourseClient,
+} from "@/lib/client-user-courses";
 import { useAuthStore } from "@/store/auth.store";
 import { useMemo, useState } from "react";
 
@@ -18,7 +18,6 @@ export const AddCourseButton = ({
   initialSelectedCourses = [],
 }: AddCourseButtonProps) => {
   const {
-    token,
     isAuthorized,
     openAuthModal,
     selectedCourses,
@@ -38,7 +37,7 @@ export const AddCourseButton = ({
   const handleClick = async () => {
     const normalizedCourseId = courseId.trim();
 
-    if (!isAuthorized || !token) {
+    if (!isAuthorized) {
       openAuthModal();
       return;
     }
@@ -53,17 +52,17 @@ export const AddCourseButton = ({
 
     try {
       if (isAdded) {
-        await removeUserCourse(normalizedCourseId, token);
+        await removeUserCourseClient(normalizedCourseId);
         const nextSelectedCourses = effectiveSelectedCourses.filter(
           (id) => id !== normalizedCourseId,
         );
         syncSelectedCourses(nextSelectedCourses);
       } else {
         try {
-          await addUserCourse(normalizedCourseId, token);
+          await addUserCourseClient(normalizedCourseId);
         } catch (err) {
           if (
-            err instanceof ApiError &&
+            err instanceof ClientApiError &&
             /курс уже добавлен|курс уже был добавлен/i.test(err.message)
           ) {
             const nextSelectedCourses = effectiveSelectedCourses.includes(
@@ -86,7 +85,7 @@ export const AddCourseButton = ({
         syncSelectedCourses(nextSelectedCourses);
       }
     } catch (err) {
-      if (err instanceof ApiError) {
+      if (err instanceof ClientApiError) {
         setError(
           `Не удалось изменить состояние курса (courseId: ${normalizedCourseId}, status: ${err.status}). ${err.message}`,
         );
@@ -110,7 +109,7 @@ export const AddCourseButton = ({
         type="button"
         onClick={handleClick}
         disabled={isLoading}
-        className="flex items-center justify-center px-6.5 py-4 rounded-[46px] text-[16px] md:text-[18px] font-normal leading-[1.1] text-black w-full md:w-92.5 bg-[#BCEC30] transition-colors hover:bg-[#C6FF00] disabled:opacity-60 disabled:cursor-not-allowed"
+        className="flex w-full items-center justify-center rounded-[46px] bg-[#BCEC30] px-[26px] py-4 text-center text-[16px] font-normal leading-[1.1] text-black transition-colors hover:bg-[#C6FF00] disabled:cursor-not-allowed disabled:opacity-60 md:w-92.5 md:px-6.5 md:text-[18px]"
       >
         {isLoading
           ? "Сохраняем..."

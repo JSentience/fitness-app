@@ -26,7 +26,7 @@ export const WorkoutLessonClient = ({
 }: WorkoutLessonClientProps) => {
   const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
   const [isProgressAcceptedOpen, setIsProgressAcceptedOpen] = useState(false);
-  const token = useAuthStore((state) => state.token);
+  const isAuthorized = useAuthStore((state) => state.isAuthorized);
 
   const {
     activeWorkout,
@@ -44,7 +44,7 @@ export const WorkoutLessonClient = ({
     currentCourse: null,
     initialProgressData,
     initialWorkout,
-    token,
+    isAuthorized,
     workoutId,
   });
 

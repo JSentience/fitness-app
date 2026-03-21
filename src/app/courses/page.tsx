@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
+import type { PageWithSearchParamsProps } from "@/types/page-props.types";
 
 import { CoursesList } from "./CoursesList";
 
-type CoursesPageProps = {
-  searchParams?: Promise<{
-    courseId?: string;
-  }>;
-};
-
-export default async function CoursesPage({ searchParams }: CoursesPageProps) {
+export default async function CoursesPage({
+  searchParams,
+}: PageWithSearchParamsProps<{
+  courseId?: string;
+}>) {
   const resolvedSearchParams = searchParams
     ? await Promise.resolve(searchParams)
     : undefined;

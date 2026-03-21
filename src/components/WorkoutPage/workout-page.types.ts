@@ -1,4 +1,4 @@
-import type { Course } from "@/types/course.type";
+import type { Course } from "@/types/course.types";
 
 export type ProfileCourseState = {
   course: Course;

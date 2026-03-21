@@ -1,15 +1,12 @@
 import { redirect } from "next/navigation";
-
-type LegacyWorkoutPageProps = {
-  searchParams?: Promise<{
-    courseId?: string;
-    workoutId?: string;
-  }>;
-};
+import type { PageWithSearchParamsProps } from "@/types/page-props.types";
 
 export default async function LegacyWorkoutPage({
   searchParams,
-}: LegacyWorkoutPageProps) {
+}: PageWithSearchParamsProps<{
+  courseId?: string;
+  workoutId?: string;
+}>) {
   const resolvedSearchParams = searchParams
     ? await Promise.resolve(searchParams)
     : undefined;

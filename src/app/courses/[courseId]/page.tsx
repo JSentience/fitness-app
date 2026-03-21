@@ -2,6 +2,8 @@ import { AddCourseButton } from "@/components/AddCourseButton/AddCourseButton";
 import { getCurrentUserServer } from "@/lib/auth-api";
 import { getCourseImage, getCourseSkillImage } from "@/lib/courseImages";
 import { getCourseById } from "@/lib/courses-api";
+import { AUTH_COOKIE_NAME } from "@/lib/server-auth";
+import type { PageWithParamsProps } from "@/types/page-props.types";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -41,15 +43,11 @@ function splitDirectionsIntoColumns(directions: string[]): string[][] {
   return [directions.slice(0, 2), directions.slice(2, 4), directions.slice(4)];
 }
 
-type CourseDetailsPageProps = {
-  params: Promise<{
-    courseId: string;
-  }>;
-};
-
 export default async function CourseDetailsPage({
   params,
-}: CourseDetailsPageProps) {
+}: PageWithParamsProps<{
+  courseId: string;
+}>) {
   const { courseId } = await params;
 
   let course;
@@ -61,7 +59,7 @@ export default async function CourseDetailsPage({
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get("fitness-auth-token")?.value;
+  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
   let initialSelectedCourses: string[] = [];
 
   if (token) {
@@ -81,12 +79,8 @@ export default async function CourseDetailsPage({
 
   return (
     <main className="flex min-h-screen flex-col gap-6 bg-white px-4 py-10 md:gap-15 md:px-35 md:py-15">
-      <h1 className="text-[32px] font-medium leading-[1.1em] text-black">
-        {COURSE_TITLES[course.nameEN] || course.nameRU}
-      </h1>
-
       <div
-        className="relative h-[389px] w-full overflow-hidden rounded-[30px] shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)] md:h-77.5"
+        className="relative h-[389px] overflow-hidden rounded-[30px] shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)] md:h-77.5"
         style={{ backgroundColor: bannerBackground }}
       >
         <Image
@@ -171,38 +165,54 @@ export default async function CourseDetailsPage({
         </div>
       </section>
 
-      <section className="relative h-[588px] w-full rounded-[30px] bg-transparent md:h-147 md:bg-white md:shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)]">
-        <div className="absolute right-0 top-[-150px] z-9 h-140 w-200 pointer-events-none md:right-0 md:top-0 md:h-141.75 md:w-250">
-          <Image
-            src="/courses/details/course-get.png"
-            alt="Спортсмен"
-            fill
-            className="object-cover object-center md:object-right"
-            priority
-          />
-        </div>
+      <section className="relative h-120  md:rounded-[30px] md:px-10 md:py-10 lg:min-h-[640px] lg:px-15 lg:py-12 md:bg-linear-to-r from-white to-white lg:bg-white bg-linear-to-r from-white to-[#F9F9F9]">
+        <div className="">
+          <div className="absolute inset-x-0 top-[102px] rounded-[30px] bg-white shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)] md:h-[486px]" />
 
-        <div className="absolute bottom-0 ml-auto mr-auto flex w-[437px] flex-col items-center gap-6 rounded-4xl bg-white p-6 z-10 md:gap-7 md:p-0">
-          <h2 className="text-[32px] font-medium leading-[1em] text-black md:text-[60px]">
-            Начните путь <br />
-            к новому телу
-          </h2>
+          <div className="pointer-events-none hidden  absolute top-[-150px] lg:top-0 h-[710px] w-[560px] lg:right-[12px] lg:w-[740px] md:block lg:block">
+            <Image
+              src="/courses/details/runner.png"
+              alt="Спортсмен"
+              fill
+              className="object-contain object-top-right"
+              priority
+            />
+          </div>
+          <div className="pointer-events-none block lg:hidden md:hidden  absolute right-[-60px] top-[-130px] h-[455px] w-[482px] ">
+            <Image
+              src="/courses/details/runner-mobile.png"
+              alt="Спортсмен"
+              fill
+              className="object-contain object-top"
+              priority
+            />
+          </div>
 
-          <ul className="flex flex-col gap-0 opacity-60">
-            {benefits.map((benefit) => (
-              <li
-                key={benefit}
-                className="list-inside list-disc text-[18px] font-normal leading-[1.1] text-black md:text-[24px]"
-              >
-                {benefit}
-              </li>
-            ))}
-          </ul>
+          <div className="absolute left-0 rounded-[30px] bg-white lg:left-10 top-[142px] z-10 flex w-[343px] lg:w-[437px] flex-col items-start gap-7 ">
+            <h2 className="lg:text-[60px] text-[32px] font-medium leading-none text-black">
+              Начните путь <br />к новому телу
+            </h2>
 
-          <AddCourseButton
-            courseId={course._id}
-            initialSelectedCourses={initialSelectedCourses}
-          />
+            <ul className="flex flex-col gap-0 opacity-60">
+              {benefits.map((benefit) => (
+                <li
+                  key={benefit}
+                  className="ml-9 list-disc text-[18px] lg:text-[24px] font-normal leading-[1.1] text-black"
+                  style={{
+                    marginBottom:
+                      benefit === benefits[benefits.length - 1] ? 0 : 12,
+                  }}
+                >
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+
+            <AddCourseButton
+              courseId={course._id}
+              initialSelectedCourses={initialSelectedCourses}
+            />
+          </div>
         </div>
       </section>
     </main>

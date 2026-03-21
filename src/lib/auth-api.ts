@@ -26,6 +26,17 @@ export type MeResponse = {
   selectedCourses: string[];
 };
 
+type RawMeResponse = {
+  email?: string;
+  name?: string;
+  selectedCourses?: unknown;
+  user?: {
+    email?: string;
+    name?: string;
+    selectedCourses?: unknown;
+  };
+};
+
 export type ApiErrorResponse = {
   message?: string;
   error?: string;
@@ -109,6 +120,31 @@ async function request<T>(
   return data as T;
 }
 
+function normalizeSelectedCourses(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function normalizeMeResponse(data: RawMeResponse): MeResponse {
+  const user = data.user && typeof data.user === "object" ? data.user : data;
+  const email = typeof user.email === "string" ? user.email.trim() : "";
+
+  if (!email) {
+    throw new ApiError("Не удалось получить email пользователя", 500);
+  }
+
+  const name = typeof user.name === "string" ? user.name.trim() : undefined;
+
+  return {
+    email,
+    name,
+    selectedCourses: normalizeSelectedCourses(user.selectedCourses),
+  };
+}
+
 export async function registerUser(
   payload: RegisterPayload,
 ): Promise<RegisterResponse> {
@@ -126,18 +162,22 @@ export async function loginUser(payload: LoginPayload): Promise<LoginResponse> {
 }
 
 export async function getCurrentUser(token: string): Promise<MeResponse> {
-  return request<MeResponse>("/users/me", {
+  const response = await request<RawMeResponse>("/users/me", {
     method: "GET",
     token,
   });
+
+  return normalizeMeResponse(response);
 }
 
 export async function getCurrentUserServer(token: string): Promise<MeResponse> {
-  return request<MeResponse>("/users/me", {
+  const response = await request<RawMeResponse>("/users/me", {
     method: "GET",
     token,
     cache: "no-store",
   });
+
+  return normalizeMeResponse(response);
 }
 
 export { API_BASE_URL, ApiError };

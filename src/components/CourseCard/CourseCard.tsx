@@ -1,10 +1,11 @@
 "use client";
 
+import { ClientApiError } from "@/lib/client-api";
+import { addUserCourseClient } from "@/lib/client-user-courses";
 import { getCourseImage } from "@/lib/courseImages";
 import { getDifficultyIcon, normalizeDifficultyLabel } from "@/lib/difficulty";
-import { ApiError, addUserCourse } from "@/lib/user-courses-api";
 import { useAuthStore } from "@/store/auth.store";
-import { Course } from "@/types/course.type";
+import { Course } from "@/types/course.types";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -28,13 +29,8 @@ export const CourseCard = ({
   difficulty,
 }: CourseCardProps) => {
   const image = getCourseImage(nameEN);
-  const {
-    token,
-    isAuthorized,
-    openAuthModal,
-    selectedCourses,
-    setSelectedCourses,
-  } = useAuthStore();
+  const { isAuthorized, openAuthModal, selectedCourses, setSelectedCourses } =
+    useAuthStore();
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
 
@@ -53,7 +49,7 @@ export const CourseCard = ({
       return;
     }
 
-    if (!isAuthorized || !token) {
+    if (!isAuthorized) {
       openAuthModal();
       return;
     }
@@ -63,10 +59,10 @@ export const CourseCard = ({
 
     try {
       try {
-        await addUserCourse(_id, token);
+        await addUserCourseClient(_id);
       } catch (err) {
         if (
-          !(err instanceof ApiError) ||
+          !(err instanceof ClientApiError) ||
           !/курс уже добавлен|курс уже был добавлен/i.test(err.message)
         ) {
           throw err;
@@ -79,7 +75,7 @@ export const CourseCard = ({
 
       setSelectedCourses(nextSelectedCourses);
     } catch (err) {
-      if (err instanceof ApiError) {
+      if (err instanceof ClientApiError) {
         setError(err.message);
       } else if (err instanceof Error) {
         setError(err.message);

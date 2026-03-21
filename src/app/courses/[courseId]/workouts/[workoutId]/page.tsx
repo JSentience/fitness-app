@@ -1,27 +1,25 @@
 import { getCourseById } from "@/lib/courses-api";
+import { AUTH_COOKIE_NAME } from "@/lib/server-auth";
 import {
   getWorkoutById,
   getWorkoutProgress,
   type Workout,
 } from "@/lib/workouts-api";
+import type { PageWithParamsProps } from "@/types/page-props.types";
 import { cookies } from "next/headers";
 
 import { WorkoutLessonClient } from "./WorkoutLessonClient";
 
-type WorkoutLessonPageProps = {
-  params: Promise<{
-    courseId: string;
-    workoutId: string;
-  }>;
-};
-
 export default async function WorkoutLessonPage({
   params,
-}: WorkoutLessonPageProps) {
+}: PageWithParamsProps<{
+  courseId: string;
+  workoutId: string;
+}>) {
   const { courseId, workoutId } = await params;
 
   const cookieStore = await cookies();
-  const token = cookieStore.get("fitness-auth-token")?.value;
+  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
 
   let initialWorkout: Workout | null = null;
   let initialProgressData: number[] | null = null;

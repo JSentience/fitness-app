@@ -3,11 +3,18 @@
 import { useEffect, useState } from "react";
 
 import { getCourseById } from "@/lib/courses-api";
-import { ApiError, removeUserCourse } from "@/lib/user-courses-api";
-import { getCourseProgress, getCourseWorkouts } from "@/lib/workouts-api";
-import type { Course } from "@/types/course.type";
+import { ClientApiError } from "@/lib/client-api";
+import {
+  getCourseProgressClient,
+  getCourseWorkoutsClient,
+} from "@/lib/client-workouts-api";
+import { removeUserCourseClient } from "@/lib/client-user-courses";
+import type { Course } from "@/types/course.types";
 
-import type { ProfileCourseState, WorkoutListItem } from "../types";
+import type {
+  ProfileCourseState,
+  WorkoutListItem,
+} from "../workout-page.types";
 import { getCourseProgressPercent } from "../workoutProgress";
 
 type CourseWorkoutsResult = {
@@ -17,13 +24,13 @@ type CourseWorkoutsResult = {
 
 type UseWorkoutCoursesArgs = {
   selectedCourseIds: string[];
-  token: string | null;
+  isAuthorized: boolean;
   onSelectedCoursesChange: (selectedCourseIds: string[]) => void;
 };
 
 export function useWorkoutCourses({
   selectedCourseIds,
-  token,
+  isAuthorized,
   onSelectedCoursesChange,
 }: UseWorkoutCoursesArgs) {
   const [courses, setCourses] = useState<ProfileCourseState[]>([]);
@@ -55,10 +62,10 @@ export function useWorkoutCourses({
           selectedCourseIds.map((courseId) => getCourseById(courseId)),
         );
 
-        const progressEntries = token
+        const progressEntries = isAuthorized
           ? await Promise.all(
               loadedCourses.map(async (course) => {
-                const progress = await getCourseProgress(course._id, token).catch(
+                const progress = await getCourseProgressClient(course._id).catch(
                   () => null,
                 );
 
@@ -108,10 +115,10 @@ export function useWorkoutCourses({
     return () => {
       isMounted = false;
     };
-  }, [selectedCourseIds, token]);
+  }, [isAuthorized, selectedCourseIds]);
 
   const removeCourse = async (courseId: string) => {
-    if (!token) return;
+    if (!isAuthorized) return;
 
     setCourses((prev) =>
       prev.map((item) =>
@@ -122,10 +129,10 @@ export function useWorkoutCourses({
     );
 
     try {
-      await removeUserCourse(courseId, token);
+      await removeUserCourseClient(courseId);
     } catch (error) {
       const isAlreadyGone =
-        error instanceof ApiError &&
+        error instanceof ClientApiError &&
         /не был добавлен|not found|not added/i.test(error.message);
 
       if (!isAlreadyGone) {
@@ -159,7 +166,7 @@ export function useWorkoutCourses({
   const loadCourseWorkouts = async (
     course: Course,
   ): Promise<CourseWorkoutsResult> => {
-    if (!token) {
+    if (!isAuthorized) {
       return {
         completedWorkoutIds: new Set(),
         items: [],
@@ -167,8 +174,8 @@ export function useWorkoutCourses({
     }
 
     const [workouts, courseProgress] = await Promise.all([
-      getCourseWorkouts(course._id, token),
-      getCourseProgress(course._id, token).catch(() => null),
+      getCourseWorkoutsClient(course._id),
+      getCourseProgressClient(course._id).catch(() => null),
     ]);
 
     return {

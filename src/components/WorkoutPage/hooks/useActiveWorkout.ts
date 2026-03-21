@@ -4,15 +4,14 @@ import { useEffect, useState } from "react";
 
 import { getCourseById } from "@/lib/courses-api";
 import {
-  getCourseProgress,
-  getWorkoutById,
-  getWorkoutProgress,
-  saveWorkoutProgress,
-  type Workout,
-} from "@/lib/workouts-api";
-import type { Course } from "@/types/course.type";
-
-import type { ProgressValueMap } from "../types";
+  getCourseProgressClient,
+  getWorkoutByIdClient,
+  getWorkoutProgressClient,
+  saveWorkoutProgressClient,
+} from "@/lib/client-workouts-api";
+import { type Workout } from "@/lib/workouts-api";
+import type { Course } from "@/types/course.types";
+import type { ProgressValueMap } from "../workout-page.types";
 import {
   getCourseProgressPercent,
   loadSavedProgress,
@@ -24,24 +23,22 @@ type UseActiveWorkoutArgs = {
   currentCourse: Course | null;
   initialProgressData?: number[] | null;
   initialWorkout?: Workout | null;
-  token: string | null;
   workoutId: string | null;
+  isAuthorized: boolean;
 };
 
-type SaveWorkoutResult =
-  | {
-      courseId: string;
-      progress: number;
-    }
-  | null;
+type SaveWorkoutResult = {
+  courseId: string;
+  progress: number;
+} | null;
 
 export function useActiveWorkout({
   courseId,
   currentCourse,
   initialProgressData = null,
   initialWorkout = null,
-  token,
   workoutId,
+  isAuthorized,
 }: UseActiveWorkoutArgs) {
   const [activeWorkout, setActiveWorkout] = useState<Workout | null>(
     initialWorkout,
@@ -59,7 +56,7 @@ export function useActiveWorkout({
     let isMounted = true;
 
     const loadWorkout = async () => {
-      if (!token || !workoutId) {
+      if (!isAuthorized || !workoutId) {
         if (isMounted && !initialWorkout) {
           setActiveWorkout(null);
           setActiveWorkoutError("");
@@ -81,7 +78,7 @@ export function useActiveWorkout({
       try {
         const workout = hasInitialWorkout
           ? initialWorkout
-          : await getWorkoutById(workoutId, token);
+          : await getWorkoutByIdClient(workoutId);
 
         const serverProgress = courseId
           ? hasInitialProgress
@@ -90,7 +87,7 @@ export function useActiveWorkout({
                 workoutCompleted: false,
                 progressData: initialProgressData ?? [],
               }
-            : await getWorkoutProgress(courseId, workoutId, token).catch(
+            : await getWorkoutProgressClient(courseId, workoutId).catch(
                 () => null,
               )
           : null;
@@ -142,7 +139,7 @@ export function useActiveWorkout({
     return () => {
       isMounted = false;
     };
-  }, [courseId, initialProgressData, initialWorkout, token, workoutId]);
+  }, [courseId, initialProgressData, initialWorkout, isAuthorized, workoutId]);
 
   const updateProgressValue = (exerciseId: string, value: string) => {
     const normalizedValue = value.replace(/[^\d]/g, "");
@@ -161,7 +158,7 @@ export function useActiveWorkout({
     saveProgress(workoutId, progressValues);
     setHasProgress(true);
 
-    if (!(token && courseId && activeWorkout)) {
+    if (!(isAuthorized && courseId && activeWorkout)) {
       setSaveProgressError("");
       return null;
     }
@@ -177,9 +174,9 @@ export function useActiveWorkout({
         return isNaN(parsed) || parsed < 0 ? 0 : parsed;
       });
 
-      await saveWorkoutProgress(courseId, workoutId, progressData, token);
+      await saveWorkoutProgressClient(courseId, workoutId, progressData);
 
-      const updatedProgress = await getCourseProgress(courseId, token).catch(
+      const updatedProgress = await getCourseProgressClient(courseId).catch(
         () => null,
       );
       const courseForTotal =

@@ -1,6 +1,6 @@
 import { ProfileSummary } from "./ProfileSummary";
 import { CourseCard } from "./CourseCard";
-import type { ProfileCourseState } from "./types";
+import type { ProfileCourseState } from "./workout-page.types";
 
 type WorkoutDashboardProps = {
   courseProgressMap: Record<string, number>;

@@ -7,17 +7,18 @@ import { useShallow } from "zustand/react/shallow";
 import { SelectWorkoutModal } from "@/components/SelectWorkoutModal/SelectWorkoutModal";
 import { WorkoutDashboard } from "@/components/WorkoutPage/WorkoutDashboard";
 import { useWorkoutCourses } from "@/components/WorkoutPage/hooks/useWorkoutCourses";
-import type { WorkoutListItem } from "@/components/WorkoutPage/types";
+import type { WorkoutListItem } from "@/components/WorkoutPage/workout-page.types";
 import { useAuthStore } from "@/store/auth.store";
-import type { Course } from "@/types/course.type";
+import type { Course } from "@/types/course.types";
 
 export const ProfileClient = () => {
   const router = useRouter();
 
-  const { user, token, selectedCourses, setSelectedCourses } = useAuthStore(
+  const { isAuthorized, user, selectedCourses, setSelectedCourses } =
+    useAuthStore(
     useShallow((state) => ({
+      isAuthorized: state.isAuthorized,
       user: state.user,
-      token: state.token,
       selectedCourses: state.selectedCourses,
       setSelectedCourses: state.setSelectedCourses,
     })),
@@ -44,7 +45,7 @@ export const ProfileClient = () => {
     removeCourse,
   } = useWorkoutCourses({
     selectedCourseIds: selectedCourses,
-    token,
+    isAuthorized,
     onSelectedCoursesChange: setSelectedCourses,
   });
 
@@ -81,7 +82,7 @@ export const ProfileClient = () => {
         courseProgressMap={courseProgressMap}
         courses={courses}
         coursesError={coursesError}
-        isAuthorized={Boolean(token)}
+        isAuthorized={isAuthorized}
         isLoadingCourses={isLoadingCourses}
         isLoadingWorkouts={isLoadingWorkouts}
         onRemoveCourseAction={(courseId) => {
