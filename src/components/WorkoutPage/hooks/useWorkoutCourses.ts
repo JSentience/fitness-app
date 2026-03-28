@@ -1,21 +1,16 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
-import { getCourseById } from "@/lib/courses-api";
-import { ClientApiError } from "@/lib/client-api";
+import { ClientApiError } from '@/lib/client-api'
+import { removeUserCourseClient } from '@/lib/client-user-courses'
 import {
   getCourseProgressClient,
-  getCourseWorkoutsClient,
-} from "@/lib/client-workouts-api";
-import { removeUserCourseClient } from "@/lib/client-user-courses";
-import type { Course } from "@/types/course.types";
+  getCourseWorkoutsClient
+} from '@/lib/client-workouts-api'
 
-import type {
-  ProfileCourseState,
-  WorkoutListItem,
-} from "../workout-page.types";
-import { getCourseProgressPercent } from "../workoutProgress";
+import { getCourseById } from '@/lib/courses-api'
+import type { Course } from '@/types/course.types'
+import { useEffect, useState } from 'react'
+
+import type { ProfileCourseState, WorkoutListItem } from '../workout-page.types'
+import { getCourseProgressPercent } from '../workoutProgress'
 
 type CourseWorkoutsResult = {
   completedWorkoutIds: Set<string>;

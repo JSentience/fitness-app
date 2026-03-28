@@ -1,23 +1,18 @@
-"use client";
+'use client';
 
-import { ClientApiError } from "@/lib/client-api";
-import { addUserCourseClient } from "@/lib/client-user-courses";
-import { getCourseImage } from "@/lib/courseImages";
-import { getDifficultyIcon, normalizeDifficultyLabel } from "@/lib/difficulty";
-import { useAuthStore } from "@/store/auth.store";
-import { Course } from "@/types/course.types";
-import Image from "next/image";
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { ClientApiError } from '@/lib/client-api';
+import { addUserCourseClient } from '@/lib/client-user-courses';
+import { getCourseImage } from '@/lib/courseImages';
+import { getDifficultyIcon, normalizeDifficultyLabel } from '@/lib/difficulty';
+import { useAuthStore } from '@/store/auth.store';
+import { Course } from '@/types/course.types';
+import Image from 'next/image';
+import Link from 'next/link';
+import React, { useMemo, useState } from 'react';
 
 type CourseCardProps = Pick<
   Course,
-  | "_id"
-  | "nameRU"
-  | "nameEN"
-  | "durationInDays"
-  | "dailyDurationInMinutes"
-  | "difficulty"
+  '_id' | 'nameRU' | 'nameEN' | 'durationInDays' | 'dailyDurationInMinutes' | 'difficulty'
 >;
 
 export const CourseCard = ({
@@ -29,19 +24,13 @@ export const CourseCard = ({
   difficulty,
 }: CourseCardProps) => {
   const image = getCourseImage(nameEN);
-  const { isAuthorized, openAuthModal, selectedCourses, setSelectedCourses } =
-    useAuthStore();
+  const { isAuthorized, openAuthModal, selectedCourses, setSelectedCourses } = useAuthStore();
   const [isAdding, setIsAdding] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const isAdded = useMemo(
-    () => selectedCourses.includes(_id),
-    [selectedCourses, _id],
-  );
+  const isAdded = useMemo(() => selectedCourses.includes(_id), [selectedCourses, _id]);
 
-  const handleAddCourse = async (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ) => {
+  const handleAddCourse = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -55,7 +44,7 @@ export const CourseCard = ({
     }
 
     setIsAdding(true);
-    setError("");
+    setError('');
 
     try {
       try {
@@ -80,7 +69,7 @@ export const CourseCard = ({
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Не удалось добавить курс");
+        setError('Не удалось добавить курс');
       }
     } finally {
       setIsAdding(false);
@@ -90,13 +79,14 @@ export const CourseCard = ({
   return (
     <Link
       href={`/courses/${_id}`}
-      className="group relative flex flex-col items-center gap-6 pb-3.75 bg-white rounded-[30px] shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)] overflow-hidden w-full max-w-[343px] md:w-90 transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#BCEC30] focus-visible:ring-offset-2"
+      className="group relative flex flex-col items-center gap-6 pb-3.75 bg-white rounded-[30px] shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)] overflow-hidden w-full max-w-85.75 md:w-90 transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#BCEC30] focus-visible:ring-offset-2"
     >
-      <div className="relative w-full h-[325px] md:h-81.25">
+      <div className="relative w-full h-81.25 md:h-81.25">
         <Image
           src={image}
           alt={nameRU}
           fill
+          sizes="(max-width: 768px) 100vw, 360px"
           className="object-cover"
           priority
         />
@@ -109,12 +99,7 @@ export const CourseCard = ({
 
         <div className="flex flex-col gap-1.5 w-full">
           <div className="flex items-center gap-1.5 p-2.5 bg-[#F7F7F7] rounded-[50px]">
-            <Image
-              src="/icons/calendar.svg"
-              alt="calendar"
-              width={18}
-              height={18}
-            />
+            <Image src="/icons/calendar.svg" alt="calendar" width={18} height={18} />
             <span className="text-[16px] text-[#202020] leading-[1.1] whitespace-nowrap">
               {durationInDays} дней
             </span>
@@ -128,12 +113,7 @@ export const CourseCard = ({
           </div>
 
           <div className="flex items-center gap-1.5 p-2.5 bg-[#F7F7F7] rounded-[50px]">
-            <Image
-              src={getDifficultyIcon(difficulty)}
-              alt="difficulty"
-              width={18}
-              height={18}
-            />
+            <Image src={getDifficultyIcon(difficulty)} alt="difficulty" width={18} height={18} />
             <span className="text-[16px] text-[#202020] leading-[1.1] whitespace-nowrap">
               {normalizeDifficultyLabel(difficulty)}
             </span>
@@ -146,21 +126,19 @@ export const CourseCard = ({
         onClick={handleAddCourse}
         disabled={isAdded || isAdding}
         className="absolute top-5 right-5 z-10 disabled:cursor-default disabled:opacity-70"
-        aria-label={isAdded ? "Курс уже добавлен" : "Добавить курс"}
+        aria-label={isAdded ? 'Курс уже добавлен' : 'Добавить курс'}
       >
         <Image
           src="/icons/add-in-circle.svg"
           alt=""
           width={32}
           height={32}
-          className="w-8 h-8 md:w-[32px] md:h-[32px]"
+          className="w-8 h-8 md:w-8 md:h-8"
         />
       </button>
 
       {error && (
-        <span className="px-4 md:px-7.5 text-[14px] leading-[1.1] text-[#DB0030]">
-          {error}
-        </span>
+        <span className="px-4 md:px-7.5 text-[14px] leading-[1.1] text-[#DB0030]">{error}</span>
       )}
     </Link>
   );

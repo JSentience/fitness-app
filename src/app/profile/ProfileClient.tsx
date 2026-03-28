@@ -14,13 +14,14 @@ import type { Course } from "@/types/course.types";
 export const ProfileClient = () => {
   const router = useRouter();
 
-  const { isAuthorized, user, selectedCourses, setSelectedCourses } =
+  const { isAuthorized, user, selectedCourses, setSelectedCourses, logout } =
     useAuthStore(
     useShallow((state) => ({
       isAuthorized: state.isAuthorized,
       user: state.user,
       selectedCourses: state.selectedCourses,
       setSelectedCourses: state.setSelectedCourses,
+      logout: state.logout,
     })),
   );
 
@@ -85,6 +86,9 @@ export const ProfileClient = () => {
         isAuthorized={isAuthorized}
         isLoadingCourses={isLoadingCourses}
         isLoadingWorkouts={isLoadingWorkouts}
+        onLogoutClickAction={() => {
+          void logout();
+        }}
         onRemoveCourseAction={(courseId) => {
           void removeCourse(courseId);
         }}

@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useAuthStore } from "@/store/auth.store";
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
-import { Button } from "../Button/Button";
-import { Modal } from "../Modal/Modal";
-import { UserMenu } from "../UserMenu/UserMenu";
+import { useAuthStore } from '@/store/auth.store';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
+import { Button } from '../Button/Button';
+import { Modal } from '../Modal/Modal';
+import { UserMenu } from '../UserMenu/UserMenu';
 
 export const Header = () => {
   const {
@@ -36,32 +36,29 @@ export const Header = () => {
     if (!isUserMenuOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         closeUserMenu();
       }
     };
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         closeUserMenu();
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [isUserMenuOpen, closeUserMenu]);
 
   const handleProfileClick = () => {
     closeUserMenu();
-    router.push("/profile");
+    router.push('/profile');
   };
 
   const handleLogoutClick = () => {
@@ -77,6 +74,7 @@ export const Header = () => {
             alt="SkyFitnessPro"
             width={220}
             height={35}
+            className="h-auto w-auto"
             priority
           />
           <p className="hidden md:block text-[18px] text-black opacity-50">
@@ -85,9 +83,7 @@ export const Header = () => {
         </Link>
 
         {isLoading ? (
-          <div className="px-6 py-4 text-[18px] leading-[1.1] text-black/50">
-            Загрузка...
-          </div>
+          <div className="px-6 py-4 text-[18px] leading-[1.1] text-black/50">Загрузка...</div>
         ) : !isAuthorized ? (
           <div className="flex flex-col items-end gap-2">
             <Button onClick={openAuthModal}>Войти</Button>
@@ -110,15 +106,15 @@ export const Header = () => {
               <div className="relative h-[32px] w-[32px] md:h-[50px] md:w-[50px]">
                 <Image
                   src="/users/profile-avatar.svg"
-                  alt={user?.name ?? "Пользователь"}
+                  alt={user?.name ?? 'Пользователь'}
                   fill
                   className="object-contain"
                   priority
                 />
               </div>
 
-              <span className="text-[18px] md:text-[24px] leading-[1.1] text-black">
-                {user?.name ?? "Пользователь"}
+              <span className="hidden text-[18px] md:text-[24px] sm:block leading-[1.1] text-black">
+                {user?.name ?? 'Пользователь'}
               </span>
 
               <svg
@@ -127,9 +123,7 @@ export const Header = () => {
                 viewBox="0 0 12 8"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className={`transition-transform ${
-                  isUserMenuOpen ? "rotate-180" : ""
-                }`}
+                className={`transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`}
                 aria-hidden="true"
               >
                 <path
@@ -144,8 +138,8 @@ export const Header = () => {
 
             <UserMenu
               isOpen={isUserMenuOpen}
-              userName={user?.name ?? "Пользователь"}
-              userEmail={user?.email ?? ""}
+              userName={user?.name ?? 'Пользователь'}
+              userEmail={user?.email ?? ''}
               onProfileClickAction={handleProfileClick}
               onLogoutClickAction={handleLogoutClick}
             />

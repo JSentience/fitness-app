@@ -9,6 +9,7 @@ type WorkoutDashboardProps = {
   isAuthorized: boolean;
   isLoadingCourses: boolean;
   isLoadingWorkouts: boolean;
+  onLogoutClickAction: () => void;
   onRemoveCourseAction: (courseId: string) => void;
   onSelectCourseAction: (course: ProfileCourseState["course"]) => void;
   profileEmail: string;
@@ -23,6 +24,7 @@ export const WorkoutDashboard = ({
   isAuthorized,
   isLoadingCourses,
   isLoadingWorkouts,
+  onLogoutClickAction,
   onRemoveCourseAction,
   onSelectCourseAction,
   profileEmail,
@@ -31,7 +33,11 @@ export const WorkoutDashboard = ({
 }: WorkoutDashboardProps) => {
   return (
     <div className="flex flex-col gap-15">
-      <ProfileSummary profileName={profileName} profileEmail={profileEmail} />
+      <ProfileSummary
+        profileName={profileName}
+        profileEmail={profileEmail}
+        onLogoutClickAction={onLogoutClickAction}
+      />
 
       <section className="flex flex-col gap-10">
         <h2 className="text-[40px] font-semibold leading-[1.1] text-black">
