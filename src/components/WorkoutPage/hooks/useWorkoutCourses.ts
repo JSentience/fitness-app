@@ -1,16 +1,12 @@
-import { ClientApiError } from '@/lib/client-api'
-import { removeUserCourseClient } from '@/lib/client-user-courses'
-import {
-  getCourseProgressClient,
-  getCourseWorkoutsClient
-} from '@/lib/client-workouts-api'
+import { removeUserCourseClient } from '@/lib/client-user-courses';
+import { getCourseProgressClient, getCourseWorkoutsClient } from '@/lib/client-workouts-api';
 
-import { getCourseById } from '@/lib/courses-api'
-import type { Course } from '@/types/course.types'
-import { useEffect, useState } from 'react'
+import { getCourseById } from '@/lib/courses-api';
+import type { Course } from '@/types/course.types';
+import { useEffect, useState } from 'react';
 
-import type { ProfileCourseState, WorkoutListItem } from '../workout-page.types'
-import { getCourseProgressPercent } from '../workoutProgress'
+import type { ProfileCourseState, WorkoutListItem } from '../workout-page.types';
+import { getCourseProgressPercent } from '../workoutProgress';
 
 type CourseWorkoutsResult = {
   completedWorkoutIds: Set<string>;
@@ -30,10 +26,8 @@ export function useWorkoutCourses({
 }: UseWorkoutCoursesArgs) {
   const [courses, setCourses] = useState<ProfileCourseState[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
-  const [coursesError, setCoursesError] = useState("");
-  const [courseProgressMap, setCourseProgressMap] = useState<
-    Record<string, number>
-  >({});
+  const [coursesError, setCoursesError] = useState('');
+  const [courseProgressMap, setCourseProgressMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     let isMounted = true;
@@ -42,7 +36,7 @@ export function useWorkoutCourses({
       if (!selectedCourseIds.length) {
         if (isMounted) {
           setCourses([]);
-          setCoursesError("");
+          setCoursesError('');
           setCourseProgressMap({});
           setIsLoadingCourses(false);
         }
@@ -50,7 +44,7 @@ export function useWorkoutCourses({
       }
 
       setIsLoadingCourses(true);
-      setCoursesError("");
+      setCoursesError('');
 
       try {
         const loadedCourses = await Promise.all(
@@ -60,9 +54,7 @@ export function useWorkoutCourses({
         const progressEntries = isAuthorized
           ? await Promise.all(
               loadedCourses.map(async (course) => {
-                const progress = await getCourseProgressClient(course._id).catch(
-                  () => null,
-                );
+                const progress = await getCourseProgressClient(course._id).catch(() => null);
 
                 return [
                   course._id,
@@ -85,7 +77,7 @@ export function useWorkoutCourses({
           loadedCourses.map((course) => ({
             course,
             isRemoving: false,
-            error: "",
+            error: '',
           })),
         );
       } catch (error) {
@@ -93,11 +85,7 @@ export function useWorkoutCourses({
 
         setCourses([]);
         setCourseProgressMap({});
-        setCoursesError(
-          error instanceof Error
-            ? error.message
-            : "Не удалось загрузить ваши курсы",
-        );
+        setCoursesError(error instanceof Error ? error.message : 'Не удалось загрузить ваши курсы');
       } finally {
         if (isMounted) {
           setIsLoadingCourses(false);
@@ -117,36 +105,38 @@ export function useWorkoutCourses({
 
     setCourses((prev) =>
       prev.map((item) =>
-        item.course._id === courseId
-          ? { ...item, isRemoving: true, error: "" }
-          : item,
+        item.course._id === courseId ? { ...item, isRemoving: true, error: '' } : item,
       ),
     );
 
     try {
-      await removeUserCourseClient(courseId);
-    } catch (error) {
-      const isAlreadyGone =
-        error instanceof ClientApiError &&
-        /не был добавлен|not found|not added/i.test(error.message);
+      const response = await removeUserCourseClient(courseId);
+      const shouldRemoveCourse =
+        response.courseState === undefined ||
+        response.courseState === 'removed' ||
+        response.courseState === 'not-added';
 
-      if (!isAlreadyGone) {
+      if (!shouldRemoveCourse) {
         setCourses((prev) =>
           prev.map((item) =>
-            item.course._id === courseId
-              ? {
-                  ...item,
-                  isRemoving: false,
-                  error:
-                    error instanceof Error
-                      ? error.message
-                      : "Не удалось удалить курс",
-                }
-              : item,
+            item.course._id === courseId ? { ...item, isRemoving: false } : item,
           ),
         );
         return;
       }
+    } catch (error) {
+      setCourses((prev) =>
+        prev.map((item) =>
+          item.course._id === courseId
+            ? {
+                ...item,
+                isRemoving: false,
+                error: error instanceof Error ? error.message : 'Не удалось удалить курс',
+              }
+            : item,
+        ),
+      );
+      return;
     }
 
     setCourses((prev) => prev.filter((item) => item.course._id !== courseId));
@@ -158,9 +148,7 @@ export function useWorkoutCourses({
     onSelectedCoursesChange(selectedCourseIds.filter((id) => id !== courseId));
   };
 
-  const loadCourseWorkouts = async (
-    course: Course,
-  ): Promise<CourseWorkoutsResult> => {
+  const loadCourseWorkouts = async (course: Course): Promise<CourseWorkoutsResult> => {
     if (!isAuthorized) {
       return {
         completedWorkoutIds: new Set(),

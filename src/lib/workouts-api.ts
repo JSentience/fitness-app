@@ -1,3 +1,11 @@
+import {
+  ApiError,
+  buildApiError,
+  parseApiResponse,
+  requireApiData,
+  type ApiErrorResponse,
+} from '@/lib/api-response';
+
 export type WorkoutProgress = {
   workoutId: string;
   workoutCompleted: boolean;
@@ -11,8 +19,8 @@ export type CourseProgress = {
 };
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_FITNESS_API_URL?.replace(/\/$/, "") ||
-  "https://wedev-api.sky.pro/api/fitness";
+  process.env.NEXT_PUBLIC_FITNESS_API_URL?.replace(/\/$/, '') ||
+  'https://wedev-api.sky.pro/api/fitness';
 
 export type Exercise = {
   _id: string;
@@ -27,45 +35,11 @@ export type Workout = {
   exercises: Exercise[];
 };
 
-export type ApiErrorResponse = {
-  message?: string;
-  error?: string;
-};
-
-function getApiErrorMessage(data: unknown): string | null {
-  if (!data || typeof data !== "object") {
-    return null;
-  }
-
-  if ("message" in data && typeof data.message === "string") {
-    return data.message;
-  }
-
-  if ("error" in data && typeof data.error === "string") {
-    return data.error;
-  }
-
-  return null;
-}
-
-export class ApiError extends Error {
-  status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-  }
-}
-
 type RequestOptions = {
   token?: string;
 };
 
-async function request<T>(
-  endpoint: string,
-  { token }: RequestOptions = {},
-): Promise<T> {
+async function request<T>(endpoint: string, { token }: RequestOptions = {}): Promise<T> {
   const headers: HeadersInit = {};
 
   if (token) {
@@ -73,37 +47,21 @@ async function request<T>(
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
+    method: 'GET',
     headers,
-    cache: "no-store",
+    cache: 'no-store',
   });
-
-  const rawText = await response.text();
-  let data: T | ApiErrorResponse | null = null;
-
-  if (rawText) {
-    try {
-      data = JSON.parse(rawText) as T | ApiErrorResponse;
-    } catch {
-      data = null;
-    }
-  }
+  const { data } = await parseApiResponse<T>(response);
 
   if (!response.ok) {
-    const message = getApiErrorMessage(data);
-
-    throw new ApiError(
-      message ||
-        `Ошибка запроса к ${endpoint}: ${response.status} ${response.statusText}`,
-      response.status,
+    throw buildApiError(
+      response,
+      data,
+      `Ошибка запроса к ${endpoint}: ${response.status} ${response.statusText}`,
     );
   }
 
-  if (data === null) {
-    throw new ApiError(`Пустой ответ от API для ${endpoint}`, response.status);
-  }
-
-  return data as T;
+  return requireApiData<T>(response, data, `Пустой ответ от API для ${endpoint}`);
 }
 
 /**
@@ -119,32 +77,22 @@ export async function saveWorkoutProgress(
 ): Promise<void> {
   const headers: HeadersInit = {
     Authorization: `Bearer ${token}`,
-    "Content-Type": "text/plain",
+    'Content-Type': 'text/plain',
   };
 
-  const response = await fetch(
-    `${API_BASE_URL}/courses/${courseId}/workouts/${workoutId}`,
-    {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({ progressData }),
-      cache: "no-store",
-    },
-  );
+  const response = await fetch(`${API_BASE_URL}/courses/${courseId}/workouts/${workoutId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ progressData }),
+    cache: 'no-store',
+  });
+  const { data } = await parseApiResponse<{ message?: string }>(response);
 
   if (!response.ok) {
-    const rawText = await response.text();
-    let message: string | null = null;
-    try {
-      const data = JSON.parse(rawText) as { message?: string };
-      message = data.message ?? null;
-    } catch {
-      // ignore
-    }
-    throw new ApiError(
-      message ??
-        `Ошибка сохранения прогресса: ${response.status} ${response.statusText}`,
-      response.status,
+    throw buildApiError(
+      response,
+      data,
+      `Ошибка сохранения прогресса: ${response.status} ${response.statusText}`,
     );
   }
 }
@@ -165,34 +113,27 @@ export async function getWorkoutProgress(
   const response = await fetch(
     `${API_BASE_URL}/users/me/progress?courseId=${encodeURIComponent(courseId)}&workoutId=${encodeURIComponent(workoutId)}`,
     {
-      method: "GET",
+      method: 'GET',
       headers,
-      cache: "no-store",
+      cache: 'no-store',
     },
   );
 
   if (response.status === 404) return null;
-
-  const rawText = await response.text();
-  let data: unknown = null;
-  try {
-    data = JSON.parse(rawText);
-  } catch {
-    // ignore
-  }
+  const { data } = await parseApiResponse<unknown>(response);
 
   if (!response.ok) {
-    const message =
-      data && typeof data === "object" && "message" in data
-        ? String((data as { message: unknown }).message)
-        : `Ошибка получения прогресса: ${response.status} ${response.statusText}`;
-    throw new ApiError(message, response.status);
+    throw buildApiError(
+      response,
+      data,
+      `Ошибка получения прогресса: ${response.status} ${response.statusText}`,
+    );
   }
 
-  if (!data || typeof data !== "object") return null;
+  if (!data || typeof data !== 'object') return null;
 
   const d = data as Record<string, unknown>;
-  if (!("workoutId" in d) || !Array.isArray(d.progressData)) return null;
+  if (!('workoutId' in d) || !Array.isArray(d.progressData)) return null;
 
   return {
     workoutId: String(d.workoutId),
@@ -216,56 +157,48 @@ export async function getCourseProgress(
   const response = await fetch(
     `${API_BASE_URL}/users/me/progress?courseId=${encodeURIComponent(courseId)}`,
     {
-      method: "GET",
+      method: 'GET',
       headers,
-      cache: "no-store",
+      cache: 'no-store',
     },
   );
 
   if (response.status === 404) return null;
+  const { data } = await parseApiResponse<unknown>(response);
 
-  const rawText = await response.text();
-  let data: unknown = null;
-  try {
-    data = JSON.parse(rawText);
-  } catch {
-    // ignore
+  if (!response.ok) {
+    throw buildApiError(
+      response,
+      data,
+      `Ошибка получения прогресса: ${response.status} ${response.statusText}`,
+    );
   }
 
-  if (!response.ok) return null;
-
-  if (!data || typeof data !== "object") return null;
+  if (!data || typeof data !== 'object') return null;
 
   const d = data as Record<string, unknown>;
-  if (!("courseId" in d) || !Array.isArray(d.workoutsProgress)) return null;
+  if (!('courseId' in d) || !Array.isArray(d.workoutsProgress)) return null;
 
   return {
     courseId: String(d.courseId),
     courseCompleted: Boolean(d.courseCompleted),
-    workoutsProgress: (d.workoutsProgress as Record<string, unknown>[]).map(
-      (w) => ({
-        workoutId: String(w.workoutId),
-        workoutCompleted: Boolean(w.workoutCompleted),
-        progressData: Array.isArray(w.progressData)
-          ? (w.progressData as unknown[]).map((v) => Number(v))
-          : [],
-      }),
-    ),
+    workoutsProgress: (d.workoutsProgress as Record<string, unknown>[]).map((w) => ({
+      workoutId: String(w.workoutId),
+      workoutCompleted: Boolean(w.workoutCompleted),
+      progressData: Array.isArray(w.progressData)
+        ? (w.progressData as unknown[]).map((v) => Number(v))
+        : [],
+    })),
   };
 }
 
-export async function getCourseWorkouts(
-  courseId: string,
-  token: string,
-): Promise<Workout[]> {
+export async function getCourseWorkouts(courseId: string, token: string): Promise<Workout[]> {
   return request<Workout[]>(`/courses/${courseId}/workouts`, { token });
 }
 
-export async function getWorkoutById(
-  workoutId: string,
-  token: string,
-): Promise<Workout> {
+export async function getWorkoutById(workoutId: string, token: string): Promise<Workout> {
   return request<Workout>(`/workouts/${workoutId}`, { token });
 }
 
-export { API_BASE_URL };
+export { API_BASE_URL, ApiError };
+export type { ApiErrorResponse };

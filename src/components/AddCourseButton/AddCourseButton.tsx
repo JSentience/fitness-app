@@ -1,12 +1,8 @@
-"use client";
+'use client';
 
-import { ClientApiError } from "@/lib/client-api";
-import {
-  addUserCourseClient,
-  removeUserCourseClient,
-} from "@/lib/client-user-courses";
-import { useAuthStore } from "@/store/auth.store";
-import { useMemo, useState } from "react";
+import { addUserCourseClient, removeUserCourseClient } from '@/lib/client-user-courses';
+import { useAuthStore } from '@/store/auth.store';
+import { useMemo, useState } from 'react';
 
 type AddCourseButtonProps = {
   courseId: string;
@@ -27,7 +23,7 @@ export const AddCourseButton = ({
   const effectiveSelectedCourses =
     selectedCourses.length > 0 ? selectedCourses : initialSelectedCourses;
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const isAdded = useMemo(
     () => effectiveSelectedCourses.includes(courseId),
@@ -43,60 +39,51 @@ export const AddCourseButton = ({
     }
 
     if (!normalizedCourseId) {
-      setError("Не удалось определить идентификатор курса.");
+      setError('Не удалось определить идентификатор курса.');
       return;
     }
 
     setIsLoading(true);
-    setError("");
+    setError('');
 
     try {
       if (isAdded) {
-        await removeUserCourseClient(normalizedCourseId);
-        const nextSelectedCourses = effectiveSelectedCourses.filter(
-          (id) => id !== normalizedCourseId,
-        );
-        syncSelectedCourses(nextSelectedCourses);
-      } else {
-        try {
-          await addUserCourseClient(normalizedCourseId);
-        } catch (err) {
-          if (
-            err instanceof ClientApiError &&
-            /курс уже добавлен|курс уже был добавлен/i.test(err.message)
-          ) {
-            const nextSelectedCourses = effectiveSelectedCourses.includes(
-              normalizedCourseId,
-            )
-              ? effectiveSelectedCourses
-              : [...effectiveSelectedCourses, normalizedCourseId];
-            syncSelectedCourses(nextSelectedCourses);
-            return;
-          }
+        const response = await removeUserCourseClient(normalizedCourseId);
+        const shouldRemoveCourse =
+          response.courseState === undefined ||
+          response.courseState === 'removed' ||
+          response.courseState === 'not-added';
 
-          throw err;
+        if (shouldRemoveCourse) {
+          const nextSelectedCourses = effectiveSelectedCourses.filter(
+            (id) => id !== normalizedCourseId,
+          );
+          syncSelectedCourses(nextSelectedCourses);
         }
+      } else {
+        const response = await addUserCourseClient(normalizedCourseId);
+        const shouldAddCourse =
+          response.courseState === undefined ||
+          response.courseState === 'added' ||
+          response.courseState === 'already-added';
 
-        const nextSelectedCourses = effectiveSelectedCourses.includes(
-          normalizedCourseId,
-        )
-          ? effectiveSelectedCourses
-          : [...effectiveSelectedCourses, normalizedCourseId];
-        syncSelectedCourses(nextSelectedCourses);
+        if (shouldAddCourse) {
+          const nextSelectedCourses = effectiveSelectedCourses.includes(normalizedCourseId)
+            ? effectiveSelectedCourses
+            : [...effectiveSelectedCourses, normalizedCourseId];
+          syncSelectedCourses(nextSelectedCourses);
+        }
       }
     } catch (err) {
-      if (err instanceof ClientApiError) {
+      if (err instanceof Error) {
+        const statusSuffix =
+          'status' in err && typeof err.status === 'number' ? `, status: ${err.status}` : '';
+
         setError(
-          `Не удалось изменить состояние курса (courseId: ${normalizedCourseId}, status: ${err.status}). ${err.message}`,
-        );
-      } else if (err instanceof Error) {
-        setError(
-          `Не удалось изменить состояние курса (courseId: ${normalizedCourseId}). ${err.message}`,
+          `Не удалось изменить состояние курса (courseId: ${normalizedCourseId}${statusSuffix}). ${err.message}`,
         );
       } else {
-        setError(
-          `Не удалось изменить состояние курса (courseId: ${normalizedCourseId}).`,
-        );
+        setError(`Не удалось изменить состояние курса (courseId: ${normalizedCourseId}).`);
       }
     } finally {
       setIsLoading(false);
@@ -112,17 +99,15 @@ export const AddCourseButton = ({
         className="flex w-full items-center justify-center rounded-[46px] bg-[#BCEC30] px-[26px] py-4 text-center text-[16px] font-normal leading-[1.1] text-black transition-colors hover:bg-[#C6FF00] disabled:cursor-not-allowed disabled:opacity-60 md:w-92.5 md:px-6.5 md:text-[18px]"
       >
         {isLoading
-          ? "Сохраняем..."
+          ? 'Сохраняем...'
           : !isAuthorized
-            ? "Войдите, чтобы добавить курс"
+            ? 'Войдите, чтобы добавить курс'
             : isAdded
-              ? "Удалить курс"
-              : "Добавить курс"}
+              ? 'Удалить курс'
+              : 'Добавить курс'}
       </button>
 
-      {error && (
-        <p className="text-[14px] leading-[1.1] text-[#DB0030]">{error}</p>
-      )}
+      {error && <p className="text-[14px] leading-[1.1] text-[#DB0030]">{error}</p>}
     </div>
   );
 };

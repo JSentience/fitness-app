@@ -17,10 +17,12 @@
     "bodyflex",
     "Sparcle",
     "Кундалини",
-    "Аштанга"
+    "Аштанга",
+    "@theme"
   ],
   "words": [
     "Хатха",
-    "haspopup"
+    "haspopup",
+    "@theme"
   ]
 }

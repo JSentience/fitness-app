@@ -1,9 +1,6 @@
-import {
-  createUnauthorizedResponse,
-  getAuthTokenFromCookies,
-} from "@/lib/server-auth";
-import { getCourseProgress, getWorkoutProgress } from "@/lib/workouts-api";
-import { NextResponse } from "next/server";
+import { createUnauthorizedResponse, getAuthTokenFromCookies } from '@/lib/server-auth';
+import { ApiError, getCourseProgress, getWorkoutProgress } from '@/lib/workouts-api';
+import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const token = await getAuthTokenFromCookies();
@@ -14,14 +11,11 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const courseId = searchParams.get("courseId")?.trim() ?? "";
-    const workoutId = searchParams.get("workoutId")?.trim() ?? "";
+    const courseId = searchParams.get('courseId')?.trim() ?? '';
+    const workoutId = searchParams.get('workoutId')?.trim() ?? '';
 
     if (!courseId) {
-      return NextResponse.json(
-        { message: "Не указан courseId" },
-        { status: 400 },
-      );
+      return NextResponse.json({ message: 'Не указан courseId' }, { status: 400 });
     }
 
     const result = workoutId
@@ -32,12 +26,9 @@ export async function GET(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        message:
-          error instanceof Error
-            ? error.message
-            : "Не удалось получить прогресс",
+        message: error instanceof Error ? error.message : 'Не удалось получить прогресс',
       },
-      { status: 400 },
+      { status: error instanceof ApiError ? error.status : 500 },
     );
   }
 }

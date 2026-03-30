@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import type { Exercise } from "@/lib/workouts-api";
-import type { ProgressValueMap } from "./workout-page.types";
+import type { Exercise } from '@/lib/workouts-api';
+import type { ProgressValueMap } from './workout-page.types';
 
 type ExercisesPanelProps = {
   workoutName: string;
@@ -11,9 +11,8 @@ type ExercisesPanelProps = {
   onOpenProgressAction: () => void;
 };
 
-const PROGRESS_BAR_TOTAL_WIDTH = 320;
-const PROGRESS_BAR_COLOR = "#00C1FF";
-const PROGRESS_BAR_BG = "#F7F7F7";
+const PROGRESS_BAR_COLOR = '#00C1FF';
+const PROGRESS_BAR_BG = '#F7F7F7';
 
 function getProgressPercent(
   exerciseId: string,
@@ -63,38 +62,30 @@ export const ExercisesPanel = ({
                       exercise.quantity,
                       progressValues,
                     );
-                    const fillWidth = Math.round(
-                      (percent / 100) * PROGRESS_BAR_TOTAL_WIDTH,
-                    );
 
                     return (
-                      <div key={exercise._id} className="flex flex-col gap-2.5">
-                        <span
-                          className="text-[18px] leading-[1.1] text-black"
-                          style={{ width: PROGRESS_BAR_TOTAL_WIDTH }}
-                        >
-                          {exercise.name}{" "}
-                          <span className="text-black/50">{percent}%</span>
+                      <div
+                        key={exercise._id}
+                        className="flex w-[283px] flex-col gap-2.5 md:w-[320px]"
+                      >
+                        <span className="w-full text-[18px] leading-[1.1] text-black">
+                          {exercise.name} <span className="text-black/50">{percent}%</span>
                         </span>
 
                         <div
-                          className="relative overflow-hidden rounded-[3px]"
-                          style={{
-                            width: PROGRESS_BAR_TOTAL_WIDTH,
-                            height: 6,
-                            backgroundColor: PROGRESS_BAR_BG,
-                          }}
+                          className="relative h-[6px] w-full overflow-hidden rounded-[3px]"
+                          style={{ backgroundColor: PROGRESS_BAR_BG }}
                           role="progressbar"
                           aria-valuenow={percent}
                           aria-valuemin={0}
                           aria-valuemax={100}
                           aria-label={`Прогресс: ${exercise.name}`}
                         >
-                          {fillWidth > 0 && (
+                          {percent > 0 && (
                             <div
                               className="absolute left-0 top-0 h-full rounded-[3px]"
                               style={{
-                                width: fillWidth,
+                                width: `${percent}%`,
                                 backgroundColor: PROGRESS_BAR_COLOR,
                               }}
                             />
@@ -112,11 +103,12 @@ export const ExercisesPanel = ({
         <button
           type="button"
           onClick={onOpenProgressAction}
-          className="flex w-[320px] items-center justify-center rounded-[46px] bg-[#BCEC30] px-6.5 py-4 text-[18px] leading-[1.1] text-black transition-colors hover:bg-[#C6FF00] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#BCEC30]/50"
+          className="flex w-[283px] sm:w-[320px] items-center justify-center rounded-[46px] bg-[#BCEC30] px-6.5 py-4 text-[18px] leading-[1.1] text-black transition-colors hover:bg-[#C6FF00] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#BCEC30]/50"
         >
-          {hasProgress ? "Обновить свой прогресс" : "Заполнить свой прогресс"}
+          {hasProgress ? 'Обновить свой прогресс' : 'Заполнить свой прогресс'}
         </button>
       </div>
     </section>
   );
 };
+

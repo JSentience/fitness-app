@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from '@/store/auth.store';
+import { useState } from 'react';
 
-import { ProgressModal } from "@/components/WorkoutPage/ProgressModal";
-import { ProgressSuccessModal } from "@/components/WorkoutPage/ProgressSuccessModal";
-import { WorkoutSession } from "@/components/WorkoutPage/WorkoutSession";
-import { useActiveWorkout } from "@/components/WorkoutPage/hooks/useActiveWorkout";
-import type { Workout } from "@/lib/workouts-api";
+import { ProgressModal } from '@/components/WorkoutPage/ProgressModal';
+import { ProgressSuccessModal } from '@/components/WorkoutPage/ProgressSuccessModal';
+import { WorkoutSession } from '@/components/WorkoutPage/WorkoutSession';
+import { useActiveWorkout } from '@/components/WorkoutPage/hooks/useActiveWorkout';
+import type { Workout } from '@/lib/workouts-api';
 
 type WorkoutLessonClientProps = {
   courseId: string;
@@ -20,7 +20,7 @@ type WorkoutLessonClientProps = {
 export const WorkoutLessonClient = ({
   courseId,
   workoutId,
-  initialCourseName = "",
+  initialCourseName = '',
   initialProgressData = null,
   initialWorkout = null,
 }: WorkoutLessonClientProps) => {
@@ -50,7 +50,7 @@ export const WorkoutLessonClient = ({
 
   const progressTitle = activeWorkout?.name
     ? `Мой прогресс по тренировке "${activeWorkout.name}":`
-    : "Мой прогресс";
+    : 'Мой прогресс';
 
   return (
     <main className="min-h-screen bg-white px-4 py-12.5 md:px-35">
@@ -62,7 +62,7 @@ export const WorkoutLessonClient = ({
         isLoadingActiveWorkout={isLoadingActiveWorkout}
         onOpenProgressAction={() => {
           setIsProgressAcceptedOpen(false);
-          setSaveProgressError("");
+          setSaveProgressError('');
           setIsProgressModalOpen(true);
         }}
         progressValues={progressValues}
@@ -79,7 +79,11 @@ export const WorkoutLessonClient = ({
           setIsProgressModalOpen(false);
         }}
         onSubmitAction={() => {
-          void saveCurrentProgress().then(() => {
+          void saveCurrentProgress().then((result) => {
+            if (!result) {
+              return;
+            }
+
             setIsProgressModalOpen(false);
             setIsProgressAcceptedOpen(true);
           });

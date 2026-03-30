@@ -1,6 +1,5 @@
 'use client';
 
-import { ClientApiError } from '@/lib/client-api';
 import { addUserCourseClient } from '@/lib/client-user-courses';
 import { getCourseImage } from '@/lib/courseImages';
 import { getDifficultyIcon, normalizeDifficultyLabel } from '@/lib/difficulty';
@@ -47,26 +46,21 @@ export const CourseCard = ({
     setError('');
 
     try {
-      try {
-        await addUserCourseClient(_id);
-      } catch (err) {
-        if (
-          !(err instanceof ClientApiError) ||
-          !/курс уже добавлен|курс уже был добавлен/i.test(err.message)
-        ) {
-          throw err;
-        }
+      const response = await addUserCourseClient(_id);
+      const shouldAddCourse =
+        response.courseState === undefined ||
+        response.courseState === 'added' ||
+        response.courseState === 'already-added';
+
+      if (shouldAddCourse) {
+        const nextSelectedCourses = selectedCourses.includes(_id)
+          ? selectedCourses
+          : [...selectedCourses, _id];
+
+        setSelectedCourses(nextSelectedCourses);
       }
-
-      const nextSelectedCourses = selectedCourses.includes(_id)
-        ? selectedCourses
-        : [...selectedCourses, _id];
-
-      setSelectedCourses(nextSelectedCourses);
     } catch (err) {
-      if (err instanceof ClientApiError) {
-        setError(err.message);
-      } else if (err instanceof Error) {
+      if (err instanceof Error) {
         setError(err.message);
       } else {
         setError('Не удалось добавить курс');
@@ -79,7 +73,7 @@ export const CourseCard = ({
   return (
     <Link
       href={`/courses/${_id}`}
-      className="group relative flex flex-col items-center gap-6 pb-3.75 bg-white rounded-[30px] shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)] overflow-hidden w-full max-w-85.75 md:w-90 transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#BCEC30] focus-visible:ring-offset-2"
+      className="group relative flex flex-col items-center gap-6 pb-3.75 bg-white rounded-[30px] shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)] overflow-hidden w-full max-w-85.75 md:max-w-90  transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#BCEC30] focus-visible:ring-offset-2"
     >
       <div className="relative w-full h-81.25 md:h-81.25">
         <Image

@@ -1,22 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-import { getCourseById } from "@/lib/courses-api";
 import {
   getCourseProgressClient,
   getWorkoutByIdClient,
   getWorkoutProgressClient,
   saveWorkoutProgressClient,
-} from "@/lib/client-workouts-api";
-import { type Workout } from "@/lib/workouts-api";
-import type { Course } from "@/types/course.types";
-import type { ProgressValueMap } from "../workout-page.types";
-import {
-  getCourseProgressPercent,
-  loadSavedProgress,
-  saveProgress,
-} from "../workoutProgress";
+} from '@/lib/client-workouts-api';
+import { getCourseById } from '@/lib/courses-api';
+import { type Workout } from '@/lib/workouts-api';
+import type { Course } from '@/types/course.types';
+import type { ProgressValueMap } from '../workout-page.types';
+import { getCourseProgressPercent, loadSavedProgress, saveProgress } from '../workoutProgress';
 
 type UseActiveWorkoutArgs = {
   courseId: string | null;
@@ -28,8 +24,9 @@ type UseActiveWorkoutArgs = {
 };
 
 type SaveWorkoutResult = {
-  courseId: string;
-  progress: number;
+  saved: true;
+  courseId?: string;
+  progress?: number;
 } | null;
 
 export function useActiveWorkout({
@@ -40,17 +37,15 @@ export function useActiveWorkout({
   workoutId,
   isAuthorized,
 }: UseActiveWorkoutArgs) {
-  const [activeWorkout, setActiveWorkout] = useState<Workout | null>(
-    initialWorkout,
-  );
+  const [activeWorkout, setActiveWorkout] = useState<Workout | null>(initialWorkout);
   const [isLoadingActiveWorkout, setIsLoadingActiveWorkout] = useState(false);
-  const [activeWorkoutError, setActiveWorkoutError] = useState("");
+  const [activeWorkoutError, setActiveWorkoutError] = useState('');
   const [progressValues, setProgressValues] = useState<ProgressValueMap>({});
   const [hasProgress, setHasProgress] = useState(
     (initialProgressData ?? []).some((value) => value > 0),
   );
   const [isSavingProgress, setIsSavingProgress] = useState(false);
-  const [saveProgressError, setSaveProgressError] = useState("");
+  const [saveProgressError, setSaveProgressError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -59,26 +54,23 @@ export function useActiveWorkout({
       if (!isAuthorized || !workoutId) {
         if (isMounted && !initialWorkout) {
           setActiveWorkout(null);
-          setActiveWorkoutError("");
+          setActiveWorkoutError('');
           setIsLoadingActiveWorkout(false);
           setProgressValues({});
-          setSaveProgressError("");
+          setSaveProgressError('');
         }
         return;
       }
 
-      const hasInitialWorkout =
-        Boolean(initialWorkout) && initialWorkout?._id === workoutId;
+      const hasInitialWorkout = Boolean(initialWorkout) && initialWorkout?._id === workoutId;
       const hasInitialProgress =
         Array.isArray(initialProgressData) && initialProgressData.length > 0;
 
       setIsLoadingActiveWorkout(!hasInitialWorkout);
-      setActiveWorkoutError("");
+      setActiveWorkoutError('');
 
       try {
-        const workout = hasInitialWorkout
-          ? initialWorkout
-          : await getWorkoutByIdClient(workoutId);
+        const workout = hasInitialWorkout ? initialWorkout : await getWorkoutByIdClient(workoutId);
 
         const serverProgress = courseId
           ? hasInitialProgress
@@ -87,9 +79,7 @@ export function useActiveWorkout({
                 workoutCompleted: false,
                 progressData: initialProgressData ?? [],
               }
-            : await getWorkoutProgressClient(courseId, workoutId).catch(
-                () => null,
-              )
+            : await getWorkoutProgressClient(courseId, workoutId).catch(() => null)
           : null;
 
         if (!isMounted || !workout) return;
@@ -107,25 +97,21 @@ export function useActiveWorkout({
               acc[exercise._id] = String(serverValue);
               serverHasData = true;
             } else {
-              acc[exercise._id] = saved[exercise._id] ?? "";
+              acc[exercise._id] = saved[exercise._id] ?? '';
             }
 
             return acc;
           }, {}),
         );
 
-        setHasProgress(
-          serverHasData || Object.values(saved).some((value) => value !== ""),
-        );
+        setHasProgress(serverHasData || Object.values(saved).some((value) => value !== ''));
       } catch (error) {
         if (!isMounted) return;
 
         setActiveWorkout(null);
         setProgressValues({});
         setActiveWorkoutError(
-          error instanceof Error
-            ? error.message
-            : "Не удалось загрузить тренировку",
+          error instanceof Error ? error.message : 'Не удалось загрузить тренировку',
         );
       } finally {
         if (isMounted) {
@@ -142,7 +128,7 @@ export function useActiveWorkout({
   }, [courseId, initialProgressData, initialWorkout, isAuthorized, workoutId]);
 
   const updateProgressValue = (exerciseId: string, value: string) => {
-    const normalizedValue = value.replace(/[^\d]/g, "");
+    const normalizedValue = value.replace(/[^\d]/g, '');
 
     setProgressValues((prev) => ({
       ...prev,
@@ -159,16 +145,16 @@ export function useActiveWorkout({
     setHasProgress(true);
 
     if (!(isAuthorized && courseId && activeWorkout)) {
-      setSaveProgressError("");
-      return null;
+      setSaveProgressError('');
+      return { saved: true };
     }
 
     setIsSavingProgress(true);
-    setSaveProgressError("");
+    setSaveProgressError('');
 
     try {
       const progressData = activeWorkout.exercises.map((exercise) => {
-        const raw = progressValues[exercise._id] ?? "";
+        const raw = progressValues[exercise._id] ?? '';
         const parsed = parseInt(raw, 10);
 
         return isNaN(parsed) || parsed < 0 ? 0 : parsed;
@@ -176,26 +162,25 @@ export function useActiveWorkout({
 
       await saveWorkoutProgressClient(courseId, workoutId, progressData);
 
-      const updatedProgress = await getCourseProgressClient(courseId).catch(
-        () => null,
-      );
-      const courseForTotal =
-        currentCourse ?? (await getCourseById(courseId).catch(() => null));
+      const updatedProgress = await getCourseProgressClient(courseId).catch(() => null);
+      const courseForTotal = currentCourse ?? (await getCourseById(courseId).catch(() => null));
       const totalWorkouts = courseForTotal?.workouts.length ?? 0;
 
       if (!totalWorkouts) {
-        return null;
+        return {
+          saved: true,
+          courseId,
+        };
       }
 
       return {
+        saved: true,
         courseId,
         progress: getCourseProgressPercent(totalWorkouts, updatedProgress),
       };
     } catch (error) {
       setSaveProgressError(
-        error instanceof Error
-          ? error.message
-          : "Не удалось сохранить прогресс на сервере",
+        error instanceof Error ? error.message : 'Не удалось сохранить прогресс на сервере',
       );
       return null;
     } finally {
