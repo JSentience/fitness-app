@@ -212,9 +212,3 @@ NEXT_PUBLIC_FITNESS_API_URL="https://wedev-api.sky.pro/api/fitness"
 ```
 
 Файл `.env` в проекте уже используется для локального запуска.
-
-
-
-## Дополнительная документация
-
-Подробный разбор слоев и потоков проекта лежит в [PROJECT_WALKTHROUGH.md](/Users/sergey-nasonov/Yandex.Disk.localized/HTML/sky-pro/fitness-app/PROJECT_WALKTHROUGH.md).
