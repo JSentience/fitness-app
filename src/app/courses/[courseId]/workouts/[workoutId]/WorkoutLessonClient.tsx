@@ -1,12 +1,11 @@
 'use client';
 
 import { useAuthStore } from '@/store/auth.store';
-import { useState } from 'react';
 
 import { ProgressModal } from '@/components/WorkoutPage/ProgressModal';
-import { ProgressSuccessModal } from '@/components/WorkoutPage/ProgressSuccessModal';
 import { WorkoutSession } from '@/components/WorkoutPage/WorkoutSession';
 import { useActiveWorkout } from '@/components/WorkoutPage/hooks/useActiveWorkout';
+import { useWorkoutProgressModal } from '@/components/WorkoutPage/hooks/useWorkoutProgressModal';
 import type { Workout } from '@/lib/workouts-api';
 
 type WorkoutLessonClientProps = {
@@ -24,8 +23,6 @@ export const WorkoutLessonClient = ({
   initialProgressData = null,
   initialWorkout = null,
 }: WorkoutLessonClientProps) => {
-  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
-  const [isProgressAcceptedOpen, setIsProgressAcceptedOpen] = useState(false);
   const isAuthorized = useAuthStore((state) => state.isAuthorized);
 
   const {
@@ -48,9 +45,17 @@ export const WorkoutLessonClient = ({
     workoutId,
   });
 
-  const progressTitle = activeWorkout?.name
-    ? `Мой прогресс по тренировке "${activeWorkout.name}":`
-    : 'Мой прогресс';
+  const {
+    closeProgressModal,
+    isProgressModalOpen,
+    openProgressModal,
+    progressTitle,
+    submitProgress,
+  } = useWorkoutProgressModal({
+    activeWorkoutName: activeWorkout?.name,
+    saveCurrentProgressAction: saveCurrentProgress,
+    setSaveProgressErrorAction: setSaveProgressError,
+  });
 
   return (
     <main className="min-h-screen bg-white px-4 py-12.5 md:px-35">
@@ -60,11 +65,7 @@ export const WorkoutLessonClient = ({
         courseName={initialCourseName}
         hasProgress={hasProgress}
         isLoadingActiveWorkout={isLoadingActiveWorkout}
-        onOpenProgressAction={() => {
-          setIsProgressAcceptedOpen(false);
-          setSaveProgressError('');
-          setIsProgressModalOpen(true);
-        }}
+        onOpenProgressAction={openProgressModal}
         progressValues={progressValues}
       />
 
@@ -75,27 +76,11 @@ export const WorkoutLessonClient = ({
         progressValues={progressValues}
         isSaving={isSavingProgress}
         saveError={saveProgressError}
-        onCloseAction={() => {
-          setIsProgressModalOpen(false);
-        }}
+        onCloseAction={closeProgressModal}
         onSubmitAction={() => {
-          void saveCurrentProgress().then((result) => {
-            if (!result) {
-              return;
-            }
-
-            setIsProgressModalOpen(false);
-            setIsProgressAcceptedOpen(true);
-          });
+          void submitProgress();
         }}
         onProgressChangeAction={updateProgressValue}
-      />
-
-      <ProgressSuccessModal
-        isOpen={isProgressAcceptedOpen}
-        onCloseAction={() => {
-          setIsProgressAcceptedOpen(false);
-        }}
       />
     </main>
   );

@@ -1,9 +1,8 @@
-import type { Course } from "@/types/course.types";
+import type { Course } from '@/types/course.types';
 
 export type ProfileCourseState = {
   course: Course;
   isRemoving: boolean;
-  error: string;
 };
 
 export type ProgressValueMap = Record<string, string>;

@@ -1,5 +1,6 @@
 'use client';
 
+import { getErrorMessage } from '@/lib/error-utils';
 import { useEffect, useState } from 'react';
 
 import {
@@ -9,10 +10,15 @@ import {
   saveWorkoutProgressClient,
 } from '@/lib/client-workouts-api';
 import { getCourseById } from '@/lib/courses-api';
-import { type Workout } from '@/lib/workouts-api';
+import { type Workout, type WorkoutProgress } from '@/lib/workouts-api';
 import type { Course } from '@/types/course.types';
 import type { ProgressValueMap } from '../workout-page.types';
 import { getCourseProgressPercent, loadSavedProgress, saveProgress } from '../workoutProgress';
+import {
+  buildWorkoutProgressValues,
+  createEmptyWorkoutState,
+  createInitialHasProgress,
+} from './workout-hook.utils';
 
 type UseActiveWorkoutArgs = {
   courseId: string | null;
@@ -41,9 +47,7 @@ export function useActiveWorkout({
   const [isLoadingActiveWorkout, setIsLoadingActiveWorkout] = useState(false);
   const [activeWorkoutError, setActiveWorkoutError] = useState('');
   const [progressValues, setProgressValues] = useState<ProgressValueMap>({});
-  const [hasProgress, setHasProgress] = useState(
-    (initialProgressData ?? []).some((value) => value > 0),
-  );
+  const [hasProgress, setHasProgress] = useState(createInitialHasProgress(initialProgressData));
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [saveProgressError, setSaveProgressError] = useState('');
 
@@ -53,11 +57,12 @@ export function useActiveWorkout({
     const loadWorkout = async () => {
       if (!isAuthorized || !workoutId) {
         if (isMounted && !initialWorkout) {
-          setActiveWorkout(null);
-          setActiveWorkoutError('');
-          setIsLoadingActiveWorkout(false);
-          setProgressValues({});
-          setSaveProgressError('');
+          const emptyState = createEmptyWorkoutState();
+          setActiveWorkout(emptyState.activeWorkout);
+          setActiveWorkoutError(emptyState.activeWorkoutError);
+          setIsLoadingActiveWorkout(emptyState.isLoadingActiveWorkout);
+          setProgressValues(emptyState.progressValues);
+          setSaveProgressError(emptyState.saveProgressError);
         }
         return;
       }
@@ -72,7 +77,7 @@ export function useActiveWorkout({
       try {
         const workout = hasInitialWorkout ? initialWorkout : await getWorkoutByIdClient(workoutId);
 
-        const serverProgress = courseId
+        const serverProgress: WorkoutProgress | null = courseId
           ? hasInitialProgress
             ? {
                 workoutId,
@@ -87,32 +92,22 @@ export function useActiveWorkout({
         setActiveWorkout(workout);
 
         const saved = loadSavedProgress(workoutId);
-        let serverHasData = false;
+        const nextProgressState = buildWorkoutProgressValues({
+          savedProgress: saved,
+          serverProgress,
+          workout,
+        });
 
-        setProgressValues(
-          workout.exercises.reduce<ProgressValueMap>((acc, exercise, index) => {
-            const serverValue = serverProgress?.progressData[index];
-
-            if (serverValue !== undefined && serverValue > 0) {
-              acc[exercise._id] = String(serverValue);
-              serverHasData = true;
-            } else {
-              acc[exercise._id] = saved[exercise._id] ?? '';
-            }
-
-            return acc;
-          }, {}),
+        setProgressValues(nextProgressState.progressValues);
+        setHasProgress(
+          nextProgressState.hasServerProgress || Object.values(saved).some((value) => value !== ''),
         );
-
-        setHasProgress(serverHasData || Object.values(saved).some((value) => value !== ''));
       } catch (error) {
         if (!isMounted) return;
 
         setActiveWorkout(null);
         setProgressValues({});
-        setActiveWorkoutError(
-          error instanceof Error ? error.message : 'Не удалось загрузить тренировку',
-        );
+        setActiveWorkoutError(getErrorMessage(error, 'Не удалось загрузить тренировку'));
       } finally {
         if (isMounted) {
           setIsLoadingActiveWorkout(false);
@@ -179,9 +174,7 @@ export function useActiveWorkout({
         progress: getCourseProgressPercent(totalWorkouts, updatedProgress),
       };
     } catch (error) {
-      setSaveProgressError(
-        error instanceof Error ? error.message : 'Не удалось сохранить прогресс на сервере',
-      );
+      setSaveProgressError(getErrorMessage(error, 'Не удалось сохранить прогресс на сервере'));
       return null;
     } finally {
       setIsSavingProgress(false);

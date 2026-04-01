@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { CourseMutationResponse } from '@/lib/client-user-courses';
+import type { CourseMutationResponse } from '@/lib/course-membership';
 
 const mockAddUserCourseClient = jest.fn<(courseId: string) => Promise<CourseMutationResponse>>();
 const mockRemoveUserCourseClient = jest.fn<(courseId: string) => Promise<CourseMutationResponse>>();
@@ -11,6 +11,7 @@ const mockSetSelectedCourses = jest.fn();
 let AddCourseButton: typeof import('./AddCourseButton').AddCourseButton;
 
 let authStoreState = {
+  hasHydratedUser: true,
   isAuthorized: true,
   openAuthModal: mockOpenAuthModal,
   selectedCourses: [] as string[],
@@ -35,6 +36,7 @@ describe('AddCourseButton', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     authStoreState = {
+      hasHydratedUser: true,
       isAuthorized: true,
       openAuthModal: mockOpenAuthModal,
       selectedCourses: [],
@@ -57,5 +59,19 @@ describe('AddCourseButton', () => {
     expect(mockAddUserCourseClient).toHaveBeenCalledWith('course-1');
     expect(mockSetSelectedCourses).toHaveBeenCalledWith(['course-1']);
     expect(screen.queryByText(/не удалось изменить состояние курса/i)).not.toBeInTheDocument();
+  });
+
+  it('использует server-selected courses до завершения hydrate и не показывает устаревший CTA', () => {
+    authStoreState = {
+      hasHydratedUser: false,
+      isAuthorized: true,
+      openAuthModal: mockOpenAuthModal,
+      selectedCourses: [],
+      setSelectedCourses: mockSetSelectedCourses,
+    };
+
+    render(<AddCourseButton courseId="course-1" initialSelectedCourses={['course-1']} />);
+
+    expect(screen.getByRole('button', { name: 'Удалить курс' })).toBeInTheDocument();
   });
 });

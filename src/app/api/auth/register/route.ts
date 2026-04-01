@@ -1,22 +1,13 @@
-import { loginUser, registerUser } from "@/lib/auth-api";
-import { createAuthSuccessResponse } from "@/lib/auth-route";
-import { NextResponse } from "next/server";
+import { loginUser, registerUser } from '@/lib/auth-api';
+import { createAuthSuccessResponse, parseAuthCredentialsRequest } from '@/lib/auth-route';
+import { createBadRequestResponse, createRouteErrorResponse } from '@/lib/route-response';
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as {
-      email?: string;
-      password?: string;
-    };
-
-    const email = body.email?.trim() ?? "";
-    const password = body.password ?? "";
+    const { email, password } = await parseAuthCredentialsRequest(request);
 
     if (!email || !password) {
-      return NextResponse.json(
-        { message: "Введите email и пароль" },
-        { status: 400 },
-      );
+      return createBadRequestResponse('Введите email и пароль');
     }
 
     await registerUser({ email, password });
@@ -24,14 +15,6 @@ export async function POST(request: Request) {
 
     return await createAuthSuccessResponse(token, email);
   } catch (error) {
-    return NextResponse.json(
-      {
-        message:
-          error instanceof Error
-            ? error.message
-            : "Не удалось выполнить регистрацию",
-      },
-      { status: 400 },
-    );
+    return createRouteErrorResponse(error, 'Не удалось выполнить регистрацию', 400);
   }
 }

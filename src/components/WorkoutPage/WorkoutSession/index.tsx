@@ -1,7 +1,8 @@
-import { ExercisesPanel } from "./ExercisesPanel";
-import { WorkoutVideoPlayer } from "./WorkoutVideoPlayer";
-import type { ProgressValueMap } from "./workout-page.types";
-import type { Workout } from "@/lib/workouts-api";
+import { SurfaceCard } from '@/components/SurfaceCard/SurfaceCard';
+import { ExercisesPanel } from '@/components/WorkoutPage/ExercisesPanel';
+import { WorkoutVideoPlayer } from '@/components/WorkoutPage/WorkoutVideoPlayer';
+import type { ProgressValueMap } from '@/components/WorkoutPage/workout-page.types';
+import type { Workout } from '@/lib/workouts-api';
 
 type WorkoutSessionProps = {
   activeWorkout: Workout | null;
@@ -25,26 +26,19 @@ export const WorkoutSession = ({
   return (
     <div className="flex flex-col gap-10">
       <h1 className="text-[60px] font-medium leading-[1em] text-black">
-        {courseName || "Тренировка"}
+        {courseName || 'Тренировка'}
       </h1>
 
       {isLoadingActiveWorkout ? (
-        <div className="flex h-100 items-center justify-center overflow-hidden rounded-[30px] bg-white shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)]">
-          <p className="text-[24px] leading-[1.1] text-black/60">
-            Загружаем тренировку...
-          </p>
-        </div>
+        <SurfaceCard className="flex h-100 items-center justify-center overflow-hidden">
+          <p className="text-[24px] leading-[1.1] text-black/60">Загружаем тренировку...</p>
+        </SurfaceCard>
       ) : activeWorkoutError ? (
-        <div className="rounded-[30px] bg-white p-10 shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)]">
-          <p className="text-[24px] leading-[1.1] text-[#DB0030]">
-            {activeWorkoutError}
-          </p>
-        </div>
-      ) : activeWorkout?.video ? (
-        <WorkoutVideoPlayer
-          videoUrl={activeWorkout.video}
-          title={activeWorkout.name}
-        />
+        <SurfaceCard className="p-10">
+          <p className="text-[24px] leading-[1.1] text-[#DB0030]">{activeWorkoutError}</p>
+        </SurfaceCard>
+      ) : activeWorkout ? (
+        <WorkoutVideoPlayer videoUrl={activeWorkout.video} title={activeWorkout.name} />
       ) : null}
 
       {!isLoadingActiveWorkout && !activeWorkoutError && activeWorkout && (

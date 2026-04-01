@@ -1,14 +1,26 @@
 import {
+  type AuthSession,
+  clearStoredAuthSession,
+  hasAuthSessionHint,
+  persistAuthSession,
+  readStoredAuthUser,
+  readStoredSelectedCourses,
+  resolveAuthSession,
+  writeStoredSelectedCourses,
+} from '@/lib/auth-session';
+import { ClientApiError } from '@/lib/client-api';
+import {
   getCurrentUserClient,
   loginUserClient,
   logoutUserClient,
   registerUserClient,
-} from "@/lib/client-auth-api";
-import { ClientApiError } from "@/lib/client-api";
-import type { User } from "@/types/user.types";
-import { create } from "zustand";
+} from '@/lib/client-auth-api';
+import { getErrorMessage } from '@/lib/error-utils';
+import type { User } from '@/types/user.types';
+import { create } from 'zustand';
 
 type AuthStore = {
+  hasHydratedUser: boolean;
   isAuthorized: boolean;
   user: User | null;
   selectedCourses: string[];
@@ -28,120 +40,19 @@ type AuthStore = {
   setSelectedCourses: (selectedCourses: string[]) => void;
 };
 
-const USER_STORAGE_KEY = "fitness-auth-user";
-const SELECTED_COURSES_STORAGE_KEY = "fitness-selected-courses";
-
-function normalizeUserEmail(value: unknown): string {
-  if (typeof value === "string" && value.trim()) {
-    return value.trim();
-  }
-
-  return "";
-}
-
-function normalizeUserName(email: string, value: unknown): string {
-  if (typeof value === "string" && value.trim()) {
-    return value.trim();
-  }
-
-  if (!email) {
-    return "Пользователь";
-  }
-
-  const [namePart] = email.split("@");
-  return namePart?.trim() || "Пользователь";
-}
-
-function normalizeSelectedCourses(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter((item): item is string => typeof item === "string");
-}
-
-function normalizeUser(data: unknown): User | null {
-  if (!data || typeof data !== "object") {
-    return null;
-  }
-
-  const email = normalizeUserEmail((data as { email?: unknown }).email);
-
-  if (!email) {
-    return null;
-  }
-
+function createAuthorizedState(session: AuthSession) {
   return {
-    email,
-    name: normalizeUserName(email, (data as { name?: unknown }).name),
+    hasHydratedUser: true,
+    isAuthorized: true,
+    user: session.user,
+    selectedCourses: session.selectedCourses,
+    isLoading: false,
+    error: null,
   };
 }
 
-const getStoredUser = (): User | null => {
-  if (typeof window === "undefined") return null;
-
-  const rawUser = window.localStorage.getItem(USER_STORAGE_KEY);
-
-  if (!rawUser) {
-    return null;
-  }
-
-  try {
-    return normalizeUser(JSON.parse(rawUser) as unknown);
-  } catch {
-    return null;
-  }
-};
-
-const getStoredSelectedCourses = (): string[] => {
-  if (typeof window === "undefined") return [];
-
-  const rawSelectedCourses = window.localStorage.getItem(
-    SELECTED_COURSES_STORAGE_KEY,
-  );
-
-  if (!rawSelectedCourses) {
-    return [];
-  }
-
-  try {
-    return normalizeSelectedCourses(JSON.parse(rawSelectedCourses) as unknown);
-  } catch {
-    return [];
-  }
-};
-
-const setStoredUser = (user: User | null) => {
-  if (typeof window === "undefined") return;
-
-  if (user) {
-    window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    return;
-  }
-
-  window.localStorage.removeItem(USER_STORAGE_KEY);
-};
-
-const setStoredSelectedCourses = (selectedCourses: string[]) => {
-  if (typeof window === "undefined") return;
-
-  if (selectedCourses.length > 0) {
-    window.localStorage.setItem(
-      SELECTED_COURSES_STORAGE_KEY,
-      JSON.stringify(selectedCourses),
-    );
-    return;
-  }
-
-  window.localStorage.removeItem(SELECTED_COURSES_STORAGE_KEY);
-};
-
-const clearStoredAuthData = () => {
-  setStoredUser(null);
-  setStoredSelectedCourses([]);
-};
-
 export const useAuthStore = create<AuthStore>((set, get) => ({
+  hasHydratedUser: false,
   isAuthorized: false,
   user: null,
   selectedCourses: [],
@@ -152,13 +63,24 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   hydrateUser: async () => {
     const state = get();
-    const storedUser = state.user ?? getStoredUser();
+    const storedUser = state.user ?? readStoredAuthUser();
     const storedSelectedCourses =
-      state.selectedCourses.length > 0
-        ? state.selectedCourses
-        : getStoredSelectedCourses();
+      state.selectedCourses.length > 0 ? state.selectedCourses : readStoredSelectedCourses();
+    const hasSessionHint = hasAuthSessionHint();
 
     if (state.isLoading) {
+      return;
+    }
+
+    if (!storedUser && !hasSessionHint) {
+      set({
+        hasHydratedUser: true,
+        isAuthorized: false,
+        user: null,
+        selectedCourses: [],
+        isLoading: false,
+        error: null,
+      });
       return;
     }
 
@@ -171,30 +93,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
 
     try {
-      const response = await getCurrentUserClient();
-      const user = normalizeUser(response.user);
-      const selectedCourses = normalizeSelectedCourses(
-        response.selectedCourses,
-      );
+      const session = resolveAuthSession(await getCurrentUserClient());
 
-      if (!user) {
-        throw new Error("Не удалось получить данные пользователя");
-      }
+      persistAuthSession(session);
 
-      setStoredUser(user);
-      setStoredSelectedCourses(selectedCourses);
-
-      set({
-        isAuthorized: true,
-        user,
-        selectedCourses,
-        isLoading: false,
-        error: null,
-      });
+      set(createAuthorizedState(session));
     } catch (error) {
       if (error instanceof ClientApiError && error.status === 401) {
-        clearStoredAuthData();
+        clearStoredAuthSession();
         set({
+          hasHydratedUser: true,
           isAuthorized: false,
           user: null,
           selectedCourses: [],
@@ -205,6 +113,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       set({
+        hasHydratedUser: true,
         isAuthorized: Boolean(storedUser),
         user: storedUser,
         selectedCourses: storedSelectedCourses,
@@ -251,37 +160,24 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
 
     try {
-      const response = await loginUserClient({ email, password });
-      const user = normalizeUser(response.user);
-      const selectedCourses = normalizeSelectedCourses(
-        response.selectedCourses,
-      );
+      const session = resolveAuthSession(await loginUserClient({ email, password }));
 
-      if (!user) {
-        throw new Error("Не удалось получить данные пользователя");
-      }
-
-      setStoredUser(user);
-      setStoredSelectedCourses(selectedCourses);
+      persistAuthSession(session);
 
       set({
-        isAuthorized: true,
-        user,
-        selectedCourses,
-        isLoading: false,
-        error: null,
+        ...createAuthorizedState(session),
         isAuthModalOpen: false,
         isUserMenuOpen: false,
       });
     } catch (error) {
-      clearStoredAuthData();
+      clearStoredAuthSession();
       set({
         isAuthorized: false,
         user: null,
         selectedCourses: [],
+        hasHydratedUser: true,
         isLoading: false,
-        error:
-          error instanceof Error ? error.message : "Не удалось выполнить вход",
+        error: getErrorMessage(error, 'Не удалось выполнить вход'),
       });
       throw error;
     }
@@ -295,39 +191,24 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
 
     try {
-      const response = await registerUserClient({ email, password });
-      const user = normalizeUser(response.user);
-      const selectedCourses = normalizeSelectedCourses(
-        response.selectedCourses,
-      );
+      const session = resolveAuthSession(await registerUserClient({ email, password }));
 
-      if (!user) {
-        throw new Error("Не удалось получить данные пользователя");
-      }
-
-      setStoredUser(user);
-      setStoredSelectedCourses(selectedCourses);
+      persistAuthSession(session);
 
       set({
-        isAuthorized: true,
-        user,
-        selectedCourses,
-        isLoading: false,
-        error: null,
+        ...createAuthorizedState(session),
         isAuthModalOpen: false,
         isUserMenuOpen: false,
       });
     } catch (error) {
-      clearStoredAuthData();
+      clearStoredAuthSession();
       set({
         isAuthorized: false,
         user: null,
         selectedCourses: [],
+        hasHydratedUser: true,
         isLoading: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Не удалось выполнить регистрацию",
+        error: getErrorMessage(error, 'Не удалось выполнить регистрацию'),
       });
       throw error;
     }
@@ -336,9 +217,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   logout: async () => {
     try {
       await logoutUserClient();
+    } catch {
     } finally {
-      clearStoredAuthData();
+      clearStoredAuthSession();
       set({
+        hasHydratedUser: true,
         isAuthorized: false,
         user: null,
         selectedCourses: [],
@@ -351,7 +234,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   setSelectedCourses: (selectedCourses) => {
-    setStoredSelectedCourses(selectedCourses);
+    writeStoredSelectedCourses(selectedCourses);
     set({ selectedCourses });
   },
 }));

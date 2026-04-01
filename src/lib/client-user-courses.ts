@@ -1,21 +1,16 @@
 import { clientRequest } from '@/lib/client-api';
-
-export type CourseMutationState = 'added' | 'already-added' | 'removed' | 'not-added';
-
-export type CourseMutationResponse = {
-  message: string;
-  courseState?: CourseMutationState;
-};
+import { clientEndpoints } from '@/lib/client-endpoints';
+import type { CourseMutationResponse } from '@/lib/course-membership';
 
 export async function addUserCourseClient(courseId: string): Promise<CourseMutationResponse> {
-  return clientRequest<CourseMutationResponse>('/api/users/me/courses', {
+  return clientRequest<CourseMutationResponse>(clientEndpoints.userCourses, {
     method: 'POST',
     body: { courseId },
   });
 }
 
 export async function removeUserCourseClient(courseId: string): Promise<CourseMutationResponse> {
-  return clientRequest<CourseMutationResponse>(`/api/users/me/courses/${courseId}`, {
+  return clientRequest<CourseMutationResponse>(clientEndpoints.userCourse(courseId), {
     method: 'DELETE',
   });
 }

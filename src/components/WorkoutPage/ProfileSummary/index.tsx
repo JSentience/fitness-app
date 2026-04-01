@@ -1,5 +1,6 @@
+import { Button } from '@/components/Button/Button';
+import { SurfaceCard } from '@/components/SurfaceCard/SurfaceCard';
 import Image from 'next/image';
-import { Button } from '../Button/Button';
 
 type ProfileSummaryProps = {
   profileName: string;
@@ -16,13 +17,14 @@ export const ProfileSummary = ({
     <section className="flex flex-col gap-10">
       <h1 className="text-[24px] lg:text-[40px] font-semibold leading-[1.1] text-black">Профиль</h1>
 
-      <div className="w-full rounded-[30px] bg-white p-7.5 shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)]">
-        <div className="flex flex-col sm:flex-row items-center gap-[30px]">
+      <SurfaceCard className="w-full p-7.5">
+        <div className="flex flex-col sm:flex-row items-center gap-7.5">
           <div className="relative h-35 w-35 sm:h-50 sm:w-50 shrink-0 overflow-hidden rounded-[30px] ">
             <Image
               src="/users/user-avatar.png"
               alt="Аватар пользователя"
               fill
+              sizes="(max-width: 640px) 140px, 200px"
               className="object-contain p-4"
               priority
             />
@@ -44,8 +46,7 @@ export const ProfileSummary = ({
             </Button>
           </div>
         </div>
-      </div>
+      </SurfaceCard>
     </section>
   );
 };
-

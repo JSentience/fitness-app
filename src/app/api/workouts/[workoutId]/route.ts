@@ -1,36 +1,31 @@
 import {
-  createUnauthorizedResponse,
-  getAuthTokenFromCookies,
-} from "@/lib/server-auth";
-import { getWorkoutById } from "@/lib/workouts-api";
-import { NextResponse } from "next/server";
+    createBadRequestResponse,
+    createRouteErrorResponse,
+    normalizeRouteParam,
+    type RouteContext,
+} from '@/lib/route-response';
+import { requireAuthToken } from '@/lib/server-auth';
+import { getWorkoutById } from '@/lib/workouts-api';
+import { NextResponse } from 'next/server';
 
-type RouteContext = {
-  params: Promise<{
-    workoutId: string;
-  }>;
-};
+export async function GET(_: Request, { params }: RouteContext<{ workoutId: string }>) {
+  const auth = await requireAuthToken();
 
-export async function GET(_: Request, { params }: RouteContext) {
-  const token = await getAuthTokenFromCookies();
-
-  if (!token) {
-    return createUnauthorizedResponse();
+  if ('response' in auth) {
+    return auth.response;
   }
 
   try {
     const { workoutId } = await params;
-    const result = await getWorkoutById(workoutId, token);
+    const normalizedWorkoutId = normalizeRouteParam(workoutId);
+
+    if (!normalizedWorkoutId) {
+      return createBadRequestResponse('Не указан идентификатор тренировки');
+    }
+
+    const result = await getWorkoutById(normalizedWorkoutId, auth.token);
     return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json(
-      {
-        message:
-          error instanceof Error
-            ? error.message
-            : "Не удалось загрузить тренировку",
-      },
-      { status: 400 },
-    );
+    return createRouteErrorResponse(error, 'Не удалось загрузить тренировку', 400);
   }
 }

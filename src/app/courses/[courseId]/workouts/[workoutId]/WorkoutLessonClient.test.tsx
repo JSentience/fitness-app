@@ -30,6 +30,7 @@ const mockSaveCurrentProgress = jest.fn<() => Promise<SaveCurrentProgressResult>
 const mockSetSaveProgressError = jest.fn<(error: string) => void>();
 const mockUpdateProgressValue = jest.fn<(exerciseId: string, value: string) => void>();
 const mockUseActiveWorkout = jest.fn<(args: unknown) => UseActiveWorkoutMockResult>();
+const mockProgressSaved = jest.fn<() => void>();
 let WorkoutLessonClient: typeof import('./WorkoutLessonClient').WorkoutLessonClient;
 
 jest.mock('@/store/auth.store', () => ({
@@ -39,6 +40,12 @@ jest.mock('@/store/auth.store', () => ({
 
 jest.mock('@/components/WorkoutPage/hooks/useActiveWorkout', () => ({
   useActiveWorkout: (args: unknown) => mockUseActiveWorkout(args),
+}));
+
+jest.mock('@/lib/notify', () => ({
+  notify: {
+    progressSaved: () => mockProgressSaved(),
+  },
 }));
 
 jest.mock('@/components/WorkoutPage/WorkoutSession', () => ({
@@ -67,11 +74,6 @@ jest.mock('@/components/WorkoutPage/ProgressModal', () => ({
         {saveError ? <p>{saveError}</p> : null}
       </div>
     ) : null,
-}));
-
-jest.mock('@/components/WorkoutPage/ProgressSuccessModal', () => ({
-  ProgressSuccessModal: ({ isOpen }: { isOpen: boolean }) =>
-    isOpen ? <div>Прогресс успешно сохранен</div> : null,
 }));
 
 function mockActiveWorkout(saveError = '') {
@@ -103,7 +105,7 @@ describe('WorkoutLessonClient', () => {
     jest.clearAllMocks();
   });
 
-  it('не открывает success modal, если сохранение завершилось ошибкой', async () => {
+  it('не показывает toast об успехе, если сохранение завершилось ошибкой', async () => {
     mockSaveCurrentProgress.mockResolvedValueOnce(null);
     mockActiveWorkout('Не удалось сохранить прогресс');
 
@@ -115,10 +117,10 @@ describe('WorkoutLessonClient', () => {
     await user.click(screen.getByRole('button', { name: 'Сохранить прогресс' }));
 
     expect(screen.getByText('Не удалось сохранить прогресс')).toBeInTheDocument();
-    expect(screen.queryByText('Прогресс успешно сохранен')).not.toBeInTheDocument();
+    expect(mockProgressSaved).not.toHaveBeenCalled();
   });
 
-  it('открывает success modal только после успешного сохранения', async () => {
+  it('показывает toast только после успешного сохранения', async () => {
     mockSaveCurrentProgress.mockResolvedValueOnce({ saved: true });
     mockActiveWorkout();
 
@@ -129,6 +131,6 @@ describe('WorkoutLessonClient', () => {
     await user.click(screen.getByRole('button', { name: 'Открыть прогресс' }));
     await user.click(screen.getByRole('button', { name: 'Сохранить прогресс' }));
 
-    expect(await screen.findByText('Прогресс успешно сохранен')).toBeInTheDocument();
+    expect(mockProgressSaved).toHaveBeenCalledTimes(1);
   });
 });

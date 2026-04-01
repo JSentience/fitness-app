@@ -1,46 +1,57 @@
 import { getCurrentUser } from '@/lib/auth-api';
-import { createUnauthorizedResponse, getAuthTokenFromCookies } from '@/lib/server-auth';
-import { addUserCourse, ApiError } from '@/lib/user-courses-api';
+import {
+  hasCourseId,
+  isAlreadyAddedCourseErrorMessage,
+  normalizeCourseId,
+} from '@/lib/course-membership';
+import { getErrorMessage } from '@/lib/error-utils';
+import { createBadRequestResponse, createRouteErrorResponse } from '@/lib/route-response';
+import { requireAuthToken } from '@/lib/server-auth';
+import { addUserCourse } from '@/lib/user-courses-api';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  const token = await getAuthTokenFromCookies();
+  const auth = await requireAuthToken();
 
-  if (!token) {
-    return createUnauthorizedResponse();
+  if ('response' in auth) {
+    return auth.response;
   }
 
   try {
     const body = (await request.json()) as { courseId?: string };
-    const courseId = body.courseId?.trim() ?? '';
+    const courseId = normalizeCourseId(body.courseId ?? '');
 
     if (!courseId) {
-      return NextResponse.json({ message: 'Не указан идентификатор курса' }, { status: 400 });
+      return createBadRequestResponse('Не указан идентификатор курса');
     }
 
-    const currentUser = await getCurrentUser(token);
+    const currentUser = await getCurrentUser(auth.token);
     const selectedCourses = Array.isArray(currentUser.selectedCourses)
       ? currentUser.selectedCourses
       : [];
 
-    if (selectedCourses.includes(courseId)) {
+    if (hasCourseId(selectedCourses, courseId)) {
       return NextResponse.json({
         message: 'Курс уже добавлен',
         courseState: 'already-added' as const,
       });
     }
 
-    const result = await addUserCourse(courseId, token);
+    const result = await addUserCourse(courseId, auth.token);
     return NextResponse.json({
       message: result.message,
       courseState: 'added' as const,
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        message: error instanceof Error ? error.message : 'Не удалось добавить курс',
-      },
-      { status: error instanceof ApiError ? error.status : 400 },
-    );
+    const errorMessage = getErrorMessage(error, 'Не удалось добавить курс');
+
+    if (isAlreadyAddedCourseErrorMessage(errorMessage)) {
+      return NextResponse.json({
+        message: errorMessage,
+        courseState: 'already-added' as const,
+      });
+    }
+
+    return createRouteErrorResponse(error, 'Не удалось добавить курс', 400);
   }
 }

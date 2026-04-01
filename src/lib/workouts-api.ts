@@ -1,10 +1,9 @@
+import { ApiError, type ApiErrorResponse } from '@/lib/api-response';
 import {
-  ApiError,
-  buildApiError,
-  parseApiResponse,
-  requireApiData,
-  type ApiErrorResponse,
-} from '@/lib/api-response';
+  FITNESS_API_BASE_URL,
+  fitnessApiNullableRequest,
+  fitnessApiRequest,
+} from '@/lib/fitness-api';
 
 export type WorkoutProgress = {
   workoutId: string;
@@ -17,10 +16,6 @@ export type CourseProgress = {
   courseCompleted: boolean;
   workoutsProgress: WorkoutProgress[];
 };
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_FITNESS_API_URL?.replace(/\/$/, '') ||
-  'https://wedev-api.sky.pro/api/fitness';
 
 export type Exercise = {
   _id: string;
@@ -35,170 +30,144 @@ export type Workout = {
   exercises: Exercise[];
 };
 
-type RequestOptions = {
-  token?: string;
-};
+function normalizeProgressNumber(value: unknown): number {
+  const parsedValue = Number(value);
 
-async function request<T>(endpoint: string, { token }: RequestOptions = {}): Promise<T> {
-  const headers: HeadersInit = {};
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'GET',
-    headers,
-    cache: 'no-store',
-  });
-  const { data } = await parseApiResponse<T>(response);
-
-  if (!response.ok) {
-    throw buildApiError(
-      response,
-      data,
-      `Ошибка запроса к ${endpoint}: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  return requireApiData<T>(response, data, `Пустой ответ от API для ${endpoint}`);
+  return Number.isFinite(parsedValue) ? parsedValue : 0;
 }
 
-/**
- * Сохранить прогресс тренировки.
- * progressData — массив чисел по порядку упражнений тренировки.
- * API требует Content-Type: text/plain (не application/json).
- */
+function createProgressEndpoint(courseId: string, workoutId?: string): string {
+  const searchParams = new URLSearchParams({
+    courseId,
+  });
+
+  if (workoutId) {
+    searchParams.set('workoutId', workoutId);
+  }
+
+  return `/users/me/progress?${searchParams.toString()}`;
+}
+
+function normalizeWorkoutProgress(data: unknown): WorkoutProgress | null {
+  if (!data || typeof data !== 'object') {
+    return null;
+  }
+
+  const progress = data as Record<string, unknown>;
+
+  if (!('workoutId' in progress) || !Array.isArray(progress.progressData)) {
+    return null;
+  }
+
+  return {
+    workoutId: String(progress.workoutId),
+    workoutCompleted: Boolean(progress.workoutCompleted),
+    progressData: progress.progressData.map(normalizeProgressNumber),
+  };
+}
+
+function normalizeCourseProgress(data: unknown): CourseProgress | null {
+  if (!data || typeof data !== 'object') {
+    return null;
+  }
+
+  const progress = data as Record<string, unknown>;
+
+  if (!('courseId' in progress) || !Array.isArray(progress.workoutsProgress)) {
+    return null;
+  }
+
+  return {
+    courseId: String(progress.courseId),
+    courseCompleted: Boolean(progress.courseCompleted),
+    workoutsProgress: progress.workoutsProgress.map((workoutProgress) => {
+      if (!workoutProgress || typeof workoutProgress !== 'object') {
+        return {
+          workoutId: '',
+          workoutCompleted: false,
+          progressData: [],
+        };
+      }
+
+      const normalizedWorkoutProgress = workoutProgress as Record<string, unknown>;
+
+      return {
+        workoutId: String(normalizedWorkoutProgress.workoutId ?? ''),
+        workoutCompleted: Boolean(normalizedWorkoutProgress.workoutCompleted),
+        progressData: Array.isArray(normalizedWorkoutProgress.progressData)
+          ? normalizedWorkoutProgress.progressData.map(normalizeProgressNumber)
+          : [],
+      };
+    }),
+  };
+}
+
 export async function saveWorkoutProgress(
   courseId: string,
   workoutId: string,
   progressData: number[],
   token: string,
 ): Promise<void> {
-  const headers: HeadersInit = {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'text/plain',
-  };
-
-  const response = await fetch(`${API_BASE_URL}/courses/${courseId}/workouts/${workoutId}`, {
+  await fitnessApiRequest<void>(`/courses/${courseId}/workouts/${workoutId}`, {
     method: 'PATCH',
-    headers,
+    token,
+    headers: {
+      'Content-Type': 'text/plain',
+    },
     body: JSON.stringify({ progressData }),
     cache: 'no-store',
+    allowEmpty: true,
+    fallbackMessage: 'Не удалось сохранить прогресс',
   });
-  const { data } = await parseApiResponse<{ message?: string }>(response);
-
-  if (!response.ok) {
-    throw buildApiError(
-      response,
-      data,
-      `Ошибка сохранения прогресса: ${response.status} ${response.statusText}`,
-    );
-  }
 }
 
-/**
- * Получить прогресс пользователя по конкретной тренировке.
- * Возвращает null если прогресс ещё не записан.
- */
 export async function getWorkoutProgress(
   courseId: string,
   workoutId: string,
   token: string,
 ): Promise<WorkoutProgress | null> {
-  const headers: HeadersInit = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  const response = await fetch(
-    `${API_BASE_URL}/users/me/progress?courseId=${encodeURIComponent(courseId)}&workoutId=${encodeURIComponent(workoutId)}`,
+  const data = await fitnessApiNullableRequest<unknown>(
+    createProgressEndpoint(courseId, workoutId),
     {
-      method: 'GET',
-      headers,
+      token,
       cache: 'no-store',
+      nullStatuses: [404],
+      fallbackMessage: 'Не удалось получить прогресс тренировки',
+      timeoutMs: 2500,
     },
   );
 
-  if (response.status === 404) return null;
-  const { data } = await parseApiResponse<unknown>(response);
-
-  if (!response.ok) {
-    throw buildApiError(
-      response,
-      data,
-      `Ошибка получения прогресса: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  if (!data || typeof data !== 'object') return null;
-
-  const d = data as Record<string, unknown>;
-  if (!('workoutId' in d) || !Array.isArray(d.progressData)) return null;
-
-  return {
-    workoutId: String(d.workoutId),
-    workoutCompleted: Boolean(d.workoutCompleted),
-    progressData: (d.progressData as unknown[]).map((v) => Number(v)),
-  };
+  return normalizeWorkoutProgress(data);
 }
 
-/**
- * Получить прогресс пользователя по всему курсу.
- * Возвращает null если прогресс ещё не записан.
- */
 export async function getCourseProgress(
   courseId: string,
   token: string,
 ): Promise<CourseProgress | null> {
-  const headers: HeadersInit = {
-    Authorization: `Bearer ${token}`,
-  };
+  const data = await fitnessApiNullableRequest<unknown>(createProgressEndpoint(courseId), {
+    token,
+    cache: 'no-store',
+    nullStatuses: [404],
+    fallbackMessage: 'Не удалось получить прогресс курса',
+    timeoutMs: 2500,
+  });
 
-  const response = await fetch(
-    `${API_BASE_URL}/users/me/progress?courseId=${encodeURIComponent(courseId)}`,
-    {
-      method: 'GET',
-      headers,
-      cache: 'no-store',
-    },
-  );
-
-  if (response.status === 404) return null;
-  const { data } = await parseApiResponse<unknown>(response);
-
-  if (!response.ok) {
-    throw buildApiError(
-      response,
-      data,
-      `Ошибка получения прогресса: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  if (!data || typeof data !== 'object') return null;
-
-  const d = data as Record<string, unknown>;
-  if (!('courseId' in d) || !Array.isArray(d.workoutsProgress)) return null;
-
-  return {
-    courseId: String(d.courseId),
-    courseCompleted: Boolean(d.courseCompleted),
-    workoutsProgress: (d.workoutsProgress as Record<string, unknown>[]).map((w) => ({
-      workoutId: String(w.workoutId),
-      workoutCompleted: Boolean(w.workoutCompleted),
-      progressData: Array.isArray(w.progressData)
-        ? (w.progressData as unknown[]).map((v) => Number(v))
-        : [],
-    })),
-  };
+  return normalizeCourseProgress(data);
 }
 
 export async function getCourseWorkouts(courseId: string, token: string): Promise<Workout[]> {
-  return request<Workout[]>(`/courses/${courseId}/workouts`, { token });
+  return fitnessApiRequest<Workout[]>(`/courses/${courseId}/workouts`, {
+    token,
+    cache: 'no-store',
+  });
 }
 
 export async function getWorkoutById(workoutId: string, token: string): Promise<Workout> {
-  return request<Workout>(`/workouts/${workoutId}`, { token });
+  return fitnessApiRequest<Workout>(`/workouts/${workoutId}`, {
+    token,
+    cache: 'no-store',
+  });
 }
 
-export { API_BASE_URL, ApiError };
+export { FITNESS_API_BASE_URL as API_BASE_URL, ApiError };
 export type { ApiErrorResponse };

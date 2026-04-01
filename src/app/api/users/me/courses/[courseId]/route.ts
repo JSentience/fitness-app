@@ -1,52 +1,61 @@
 import { getCurrentUser } from '@/lib/auth-api';
-import { createUnauthorizedResponse, getAuthTokenFromCookies } from '@/lib/server-auth';
-import { ApiError, removeUserCourse } from '@/lib/user-courses-api';
+import {
+    hasCourseId,
+    isNotAddedCourseErrorMessage,
+    normalizeCourseId,
+} from '@/lib/course-membership';
+import { getErrorMessage } from '@/lib/error-utils';
+import {
+    createBadRequestResponse,
+    createRouteErrorResponse,
+    type RouteContext,
+} from '@/lib/route-response';
+import { requireAuthToken } from '@/lib/server-auth';
+import { removeUserCourse } from '@/lib/user-courses-api';
 import { NextResponse } from 'next/server';
 
-type RouteContext = {
-  params: Promise<{
-    courseId: string;
-  }>;
-};
+export async function DELETE(_: Request, { params }: RouteContext<{ courseId: string }>) {
+  const auth = await requireAuthToken();
 
-export async function DELETE(_: Request, { params }: RouteContext) {
-  const token = await getAuthTokenFromCookies();
-
-  if (!token) {
-    return createUnauthorizedResponse();
+  if ('response' in auth) {
+    return auth.response;
   }
 
   try {
     const { courseId } = await params;
-    const normalizedCourseId = courseId.trim();
+    const normalizedCourseId = normalizeCourseId(courseId);
 
     if (!normalizedCourseId) {
-      return NextResponse.json({ message: 'Не указан идентификатор курса' }, { status: 400 });
+      return createBadRequestResponse('Не указан идентификатор курса');
     }
 
-    const currentUser = await getCurrentUser(token);
+    const currentUser = await getCurrentUser(auth.token);
     const selectedCourses = Array.isArray(currentUser.selectedCourses)
       ? currentUser.selectedCourses
       : [];
 
-    if (!selectedCourses.includes(normalizedCourseId)) {
+    if (!hasCourseId(selectedCourses, normalizedCourseId)) {
       return NextResponse.json({
         message: 'Курс не был добавлен',
         courseState: 'not-added' as const,
       });
     }
 
-    const result = await removeUserCourse(normalizedCourseId, token);
+    const result = await removeUserCourse(normalizedCourseId, auth.token);
     return NextResponse.json({
       message: result.message,
       courseState: 'removed' as const,
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        message: error instanceof Error ? error.message : 'Не удалось удалить курс',
-      },
-      { status: error instanceof ApiError ? error.status : 400 },
-    );
+    const errorMessage = getErrorMessage(error, 'Не удалось удалить курс');
+
+    if (isNotAddedCourseErrorMessage(errorMessage)) {
+      return NextResponse.json({
+        message: errorMessage,
+        courseState: 'not-added' as const,
+      });
+    }
+
+    return createRouteErrorResponse(error, 'Не удалось удалить курс', 400);
   }
 }

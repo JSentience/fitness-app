@@ -1,6 +1,8 @@
 'use client';
 
+import { BodyText } from '@/components/BodyText/BodyText';
 import { Button } from '@/components/Button/Button';
+import { SurfaceCard } from '@/components/SurfaceCard/SurfaceCard';
 
 export type UserMenuProps = {
   isOpen: boolean;
@@ -21,11 +23,11 @@ export const UserMenu = ({
 
   return (
     <div className="absolute right-0 top-18.5 z-50 w-[256px]">
-      <div className="flex flex-col items-center gap-8.5 rounded-[30px] bg-white p-7.5 shadow-[0px_4px_67px_-12px_rgba(0,0,0,0.13)]">
+      <SurfaceCard className="flex flex-col items-center gap-8.5 p-7.5">
         <div className="flex flex-col items-center gap-2.5">
           <div className="flex flex-col items-center gap-2.5">
-            <p className="text-[18px] leading-[1.1] text-black">{userName}</p>
-            <p className="text-[18px] leading-[1.1] text-[#999999]">{userEmail}</p>
+            <BodyText>{userName}</BodyText>
+            <BodyText tone="secondary">{userEmail}</BodyText>
           </div>
         </div>
 
@@ -43,8 +45,7 @@ export const UserMenu = ({
             Выйти
           </Button>
         </div>
-      </div>
+      </SurfaceCard>
     </div>
   );
 };
-

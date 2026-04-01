@@ -1,35 +1,54 @@
 'use client';
 
+import { BodyText } from '@/components/BodyText/BodyText';
 import { useAuthStore } from '@/store/auth.store';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Button } from '../Button/Button';
+import { ControlButton } from '../ControlButton/ControlButton';
 import { Modal } from '../Modal/Modal';
 import { UserMenu } from '../UserMenu/UserMenu';
 
 export const Header = () => {
   const {
-    isAuthorized,
-    user,
-    isLoading,
-    error,
-    isAuthModalOpen,
-    isUserMenuOpen,
-    openAuthModal,
     closeAuthModal,
-    toggleUserMenu,
     closeUserMenu,
+    error,
     hydrateUser,
+    isAuthModalOpen,
+    isAuthorized,
+    isLoading,
+    isUserMenuOpen,
     logout,
-  } = useAuthStore();
+    openAuthModal,
+    toggleUserMenu,
+    user,
+  } = useAuthStore(
+    useShallow((state) => ({
+      closeAuthModal: state.closeAuthModal,
+      closeUserMenu: state.closeUserMenu,
+      error: state.error,
+      hydrateUser: state.hydrateUser,
+      isAuthModalOpen: state.isAuthModalOpen,
+      isAuthorized: state.isAuthorized,
+      isLoading: state.isLoading,
+      isUserMenuOpen: state.isUserMenuOpen,
+      logout: state.logout,
+      openAuthModal: state.openAuthModal,
+      toggleUserMenu: state.toggleUserMenu,
+      user: state.user,
+    })),
+  );
 
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const displayUserName = user?.name ?? 'Пользователь';
 
   useEffect(() => {
-    hydrateUser();
+    void hydrateUser();
   }, [hydrateUser]);
 
   useEffect(() => {
@@ -62,59 +81,63 @@ export const Header = () => {
   };
 
   const handleLogoutClick = () => {
-    logout();
+    void logout();
   };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white">
       <div className="flex items-start justify-between px-4 py-10 md:px-35 md:py-12.5">
         <Link href="/" className="flex flex-col gap-2">
-          <Image
-            src="/brand/logo.svg"
-            alt="SkyFitnessPro"
-            width={220}
-            height={35}
-            className="h-auto w-auto"
-            priority
-          />
+          <div className="relative h-8.75 w-55">
+            <Image
+              src="/brand/logo.svg"
+              alt="SkyFitnessPro"
+              fill
+              className="object-contain"
+              sizes="220px"
+              priority
+            />
+          </div>
           <p className="hidden md:block text-[18px] text-black opacity-50">
             Онлайн-тренировки для занятий дома
           </p>
         </Link>
 
         {isLoading ? (
-          <div className="px-6 py-4 text-[18px] leading-[1.1] text-black/50">Загрузка...</div>
+          <BodyText as="div" tone="muted" className="px-6 py-4">
+            Загрузка...
+          </BodyText>
         ) : !isAuthorized ? (
           <div className="flex flex-col items-end gap-2">
             <Button onClick={openAuthModal}>Войти</Button>
             {error && (
-              <p className="max-w-[260px] text-right text-[14px] leading-[1.1] text-[#DB0030]">
+              <p className="max-w-65 text-right text-[14px] leading-[1.1] text-[#DB0030]">
                 {error}
               </p>
             )}
           </div>
         ) : (
           <div className="relative" ref={userMenuRef}>
-            <button
-              type="button"
+            <ControlButton
               className="relative flex items-center gap-2 md:gap-4"
               onClick={toggleUserMenu}
               aria-haspopup="menu"
               aria-expanded={isUserMenuOpen}
               aria-label="Открыть меню пользователя"
             >
-              <div className="relative h-[32px] w-[32px] md:h-[50px] md:w-[50px]">
+              <div className="relative h-8 w-8 md:h-12.5 md:w-12.5">
                 <Image
                   src="/users/profile-avatar.svg"
-                  alt={user?.name ?? 'Пользователь'}
+                  alt={displayUserName}
                   fill
+                  sizes="(max-width: 768px) 32px, 50px"
                   className="object-contain"
                   priority
                 />
               </div>
 
               <span className="hidden text-[18px] md:text-[24px] sm:block leading-[1.1] text-black">
-                {user?.name ?? 'Пользователь'}
+                {displayUserName}
               </span>
 
               <svg
@@ -134,11 +157,11 @@ export const Header = () => {
                   strokeLinejoin="round"
                 />
               </svg>
-            </button>
+            </ControlButton>
 
             <UserMenu
               isOpen={isUserMenuOpen}
-              userName={user?.name ?? 'Пользователь'}
+              userName={displayUserName}
               userEmail={user?.email ?? ''}
               onProfileClickAction={handleProfileClick}
               onLogoutClickAction={handleLogoutClick}

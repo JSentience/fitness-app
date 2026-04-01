@@ -1,14 +1,11 @@
-import { getCourseById } from "@/lib/courses-api";
-import { AUTH_COOKIE_NAME } from "@/lib/server-auth";
-import {
-  getWorkoutById,
-  getWorkoutProgress,
-  type Workout,
-} from "@/lib/workouts-api";
-import type { PageWithParamsProps } from "@/types/page-props.types";
-import { cookies } from "next/headers";
+import { resolveOrFallback, resolveOrNull } from '@/lib/async-utils';
+import { getCourseById } from '@/lib/courses-api';
+import { AUTH_COOKIE_NAME } from '@/lib/server-auth';
+import { getWorkoutById, getWorkoutProgress, type Workout } from '@/lib/workouts-api';
+import type { PageWithParamsProps } from '@/types/page-props.types';
+import { cookies } from 'next/headers';
 
-import { WorkoutLessonClient } from "./WorkoutLessonClient";
+import { WorkoutLessonClient } from './WorkoutLessonClient';
 
 export default async function WorkoutLessonPage({
   params,
@@ -23,31 +20,19 @@ export default async function WorkoutLessonPage({
 
   let initialWorkout: Workout | null = null;
   let initialProgressData: number[] | null = null;
-  let initialCourseName = "";
-
-  try {
-    const course = await getCourseById(courseId);
-    initialCourseName = course.nameRU;
-  } catch {
-    initialCourseName = "";
-  }
+  const initialCourseName = await resolveOrFallback(
+    () => getCourseById(courseId).then((course) => course.nameRU),
+    '',
+  );
 
   if (token) {
-    try {
-      initialWorkout = await getWorkoutById(workoutId, token);
-    } catch {
-      initialWorkout = null;
-    }
+    const [resolvedWorkout, resolvedProgress] = await Promise.all([
+      resolveOrNull(() => getWorkoutById(workoutId, token)),
+      resolveOrNull(() => getWorkoutProgress(courseId, workoutId, token)),
+    ]);
 
-    try {
-      const progress = await getWorkoutProgress(courseId, workoutId, token);
-
-      if (progress?.progressData) {
-        initialProgressData = progress.progressData;
-      }
-    } catch {
-      initialProgressData = null;
-    }
+    initialWorkout = resolvedWorkout;
+    initialProgressData = resolvedProgress?.progressData ?? null;
   }
 
   return (

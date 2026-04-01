@@ -1,34 +1,39 @@
-import { createUnauthorizedResponse, getAuthTokenFromCookies } from '@/lib/server-auth';
-import { ApiError, getCourseProgress, getWorkoutProgress } from '@/lib/workouts-api';
+import { getErrorStatus } from '@/lib/error-utils';
+import {
+  createBadRequestResponse,
+  createRouteErrorResponse,
+  normalizeRouteParam,
+} from '@/lib/route-response';
+import { requireAuthToken } from '@/lib/server-auth';
+import { getCourseProgress, getWorkoutProgress } from '@/lib/workouts-api';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-  const token = await getAuthTokenFromCookies();
+  const auth = await requireAuthToken();
 
-  if (!token) {
-    return createUnauthorizedResponse();
+  if ('response' in auth) {
+    return auth.response;
   }
 
   try {
     const { searchParams } = new URL(request.url);
-    const courseId = searchParams.get('courseId')?.trim() ?? '';
-    const workoutId = searchParams.get('workoutId')?.trim() ?? '';
+    const courseId = normalizeRouteParam(searchParams.get('courseId'));
+    const workoutId = normalizeRouteParam(searchParams.get('workoutId'));
 
     if (!courseId) {
-      return NextResponse.json({ message: 'Не указан courseId' }, { status: 400 });
+      return createBadRequestResponse('Не указан courseId');
     }
 
     const result = workoutId
-      ? await getWorkoutProgress(courseId, workoutId, token)
-      : await getCourseProgress(courseId, token);
+      ? await getWorkoutProgress(courseId, workoutId, auth.token)
+      : await getCourseProgress(courseId, auth.token);
 
     return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json(
-      {
-        message: error instanceof Error ? error.message : 'Не удалось получить прогресс',
-      },
-      { status: error instanceof ApiError ? error.status : 500 },
-    );
+    if (getErrorStatus(error, 500) === 503) {
+      return NextResponse.json(null);
+    }
+
+    return createRouteErrorResponse(error, 'Не удалось получить прогресс', 500);
   }
 }

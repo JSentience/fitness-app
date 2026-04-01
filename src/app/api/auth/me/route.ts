@@ -1,22 +1,23 @@
-import { getCurrentUserServer } from "@/lib/auth-api";
-import { toUser } from "@/lib/auth-user";
+import { getCurrentUserServer } from '@/lib/auth-api';
+import { toUser } from '@/lib/auth-user';
 import {
   createUnauthorizedResponse,
-  getAuthTokenFromCookies,
-} from "@/lib/server-auth";
-import { NextResponse } from "next/server";
+  NO_STORE_CACHE_HEADER,
+  requireAuthToken,
+} from '@/lib/server-auth';
+import { NextResponse } from 'next/server';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const token = await getAuthTokenFromCookies();
+  const auth = await requireAuthToken();
 
-  if (!token) {
-    return createUnauthorizedResponse();
+  if ('response' in auth) {
+    return auth.response;
   }
 
   try {
-    const me = await getCurrentUserServer(token);
+    const me = await getCurrentUserServer(auth.token);
 
     return NextResponse.json(
       {
@@ -25,7 +26,7 @@ export async function GET() {
       },
       {
         headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate",
+          'Cache-Control': NO_STORE_CACHE_HEADER,
         },
       },
     );

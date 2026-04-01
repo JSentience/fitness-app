@@ -1,18 +1,8 @@
 import { Container } from '@/components/Container/Container';
 import { Header } from '@/components/Header/Header';
+import { ToastViewport } from '@/components/Toast/ToastViewport';
 import type { Metadata } from 'next';
-import { Roboto, Roboto_Mono } from 'next/font/google';
 import './globals.css';
-
-const roboto = Roboto({
-  variable: '--font-roboto-sans',
-  subsets: ['latin'],
-});
-
-const robotoMono = Roboto_Mono({
-  variable: '--font-roboto-mono',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   applicationName: 'SkyFitnessPro',
@@ -54,11 +44,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={`${roboto.variable} ${robotoMono.variable} antialiased`}>
+      <body className="antialiased">
         <Container>
           <Header />
           {children}
         </Container>
+        <ToastViewport />
       </body>
     </html>
   );
