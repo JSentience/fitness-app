@@ -16,15 +16,15 @@ const COURSE_BENEFITS = [
 
 export const CourseSection = ({ courseId, initialSelectedCourses }: CourseSectionProps) => {
   return (
-    <section className="relative -mt-25 mb-8 w-full lg:mt-26 lg:mb-12">
-      <div className="relative block h-103.75 w-full lg:hidden">
+    <section className="relative -mt-25 mb-8 w-full xl:mt-26 xl:mb-12">
+      <div className="relative block h-103.75 w-full xl:hidden">
         <Image
           src="/courses/details/runner-mobile.png"
           alt="Спортсмен"
           width={375}
           height={456}
           sizes="375px"
-          className="pointer-events-none absolute left-1/2 -top-7.5 h-auto w-93.75 max-w-none -translate-x-1/2"
+          className="pointer-events-none absolute left-1/2 -top-7.5 h-auto w-93.75 max-w-none lg:max-xl:w-140 -translate-x-1/2"
           priority
         />
       </div>
@@ -44,7 +44,7 @@ export const CourseSection = ({ courseId, initialSelectedCourses }: CourseSectio
           <AddCourseButton courseId={courseId} initialSelectedCourses={initialSelectedCourses} />
         </div>
 
-        <div className="pointer-events-none absolute -right-17.5 -top-26.25 z-20 hidden h-162.5 w-217.5 rounded-md lg:block">
+        <div className="pointer-events-none absolute -right-17.5 -top-26.25 z-20 hidden h-162.5 w-217.5 rounded-md xl:block">
           <Image
             src="/courses/details/runner.png"
             alt="Спортсмен"

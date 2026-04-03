@@ -25,14 +25,17 @@ export const CourseDirectionsSection = ({ directions }: CourseDirectionsSectionP
         Направления
       </h2>
 
-      <div className="mt-6 flex w-full flex-col gap-6 rounded-[28px] bg-[#BCEC30] p-7 md:mt-10 md:flex-row md:flex-wrap md:gap-x-31 md:gap-y-8.5">
-        <div className="flex flex-col gap-6 md:flex-row md:gap-31">
+      <div className="mt-6 flex w-full flex-col gap-6 rounded-[28px] bg-[#BCEC30] p-7 xl:mt-10 xl:flex-row xl:flex-wrap xl:gap-x-31 xl:gap-y-8.5 ">
+        <div className="flex flex-col md:flex-row xl:flex-row gap-6 xl:gap-31  ">
           {directionsColumns.map((column, columnIndex) => (
-            <div key={`direction-column-${columnIndex}`} className="flex w-71 flex-col gap-6 md:gap-8.5">
+            <div
+              key={`direction-column-${columnIndex}`}
+              className="flex w-71 flex-col gap-6 xl:gap-8.5"
+            >
               {column.map((direction) => (
                 <div key={direction} className="flex min-w-0 items-center gap-2">
                   <Image src="/icons/sparkle.svg" alt="" width={26} height={26} />
-                  <span className="text-[18px] font-normal leading-[1.1] text-black 2xl:text-[24px]">
+                  <span className="text-[18px] lg:text-[20px] font-normal leading-[1.1] text-black 2xl:text-[24px]">
                     {direction}
                   </span>
                 </div>
@@ -44,3 +47,4 @@ export const CourseDirectionsSection = ({ directions }: CourseDirectionsSectionP
     </section>
   );
 };
+

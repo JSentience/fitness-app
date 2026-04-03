@@ -9,7 +9,7 @@ export const CourseFittingSection = ({ fitting }: CourseFittingSectionProps) => 
         Подойдет для вас, если:
       </h2>
 
-      <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:gap-4.25">
+      <div className="flex flex-col gap-4 lg:flex-row md:flex-wrap md:gap-4.25">
         {fitting.map((item, index) => (
           <div
             key={`${item}-${index}`}
@@ -25,7 +25,7 @@ export const CourseFittingSection = ({ fitting }: CourseFittingSectionProps) => 
             >
               {index + 1}
             </span>
-            <p className="text-[18px] font-normal leading-[1.1] text-white md:text-[24px]">
+            <p className="text-[18px]  font-normal leading-[1.1] text-white xl:text-[24px]">
               {item}
             </p>
           </div>
@@ -34,3 +34,4 @@ export const CourseFittingSection = ({ fitting }: CourseFittingSectionProps) => 
     </section>
   );
 };
+
