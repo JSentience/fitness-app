@@ -33,7 +33,7 @@ export const ExercisesPanel = ({
           <SectionTitle as="h2">{workoutName}</SectionTitle>
 
           {exercises.length > 0 && (
-            <div className="grid gap-5 md:grid-cols-2 md:gap-x-15 xl:grid-cols-3">
+            <div className="grid gap-5 md:grid-cols-1 md:gap-x-15 xl:grid-cols-3">
               {exercises.map((exercise) => {
                 const percent = getExerciseProgressPercent(
                   exercise._id,

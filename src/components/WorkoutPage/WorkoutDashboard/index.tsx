@@ -50,7 +50,7 @@ export const WorkoutDashboard = ({
         ) : courses.length === 0 ? (
           <DashboardNotice>У вас пока нет добавленных курсов.</DashboardNotice>
         ) : (
-          <div className="flex flex-wrap justify-center gap-10 md:justify-start">
+          <div className="flex flex-wrap justify-center gap-10 lg:justify-start">
             {courses.map(({ course, isRemoving }, index) => (
               <CourseCard
                 key={course._id}
