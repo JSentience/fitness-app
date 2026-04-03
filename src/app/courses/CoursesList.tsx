@@ -44,7 +44,7 @@ export async function CoursesList() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 md:flex-row md:flex-wrap md:gap-10">
+          <div className="flex flex-col items-center lg:max-xl:justify-center gap-6 lg:flex-row lg:flex-wrap lg:gap-10">
             {courses.map((course, index) => {
               const courseId = resolveCourseId(course._id, course.id);
 
