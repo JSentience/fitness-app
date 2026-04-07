@@ -13,23 +13,22 @@ export async function CoursesList() {
   return (
     <main className="min-h-screen bg-white">
       <section className="px-4 pb-12 pt-6 md:px-35 md:pb-12.5 md:pt-4.25">
-        <div className="relative md:min-h-30">
-          <h1 className="max-w-236.75 text-[32px] font-medium leading-[1.1] text-black md:text-[60px] md:leading-none">
+        <div className="flex md:min-h-30 gap-6  ">
+          <h1 className="max-w-211.75 text-[32px] font-medium leading-[1.1] text-black md:text-[60px] md:leading-none">
             Начните заниматься спортом
             <br className="hidden md:block" />
             <span className="md:hidden"> </span>и улучшите качество жизни
           </h1>
 
-          <div className="relative hidden w-[288px] max-w-full aspect-12/5 xl:block md:absolute md:right-0 md:top-0 md:mt-0">
-            <Image
-              src="/courses/main-green.png"
-              alt="Главный зеленый элемент"
-              fill
-              sizes="288px"
-              className="object-contain"
-              priority
-            />
-          </div>
+          <Image
+            src="/courses/main-green.png"
+            alt="Главный зеленый элемент"
+            width={288}
+            height={121}
+            sizes="288px"
+            className="object-contain hidden xl:block max-w-72 h-auto"
+            priority
+          />
         </div>
       </section>
 
