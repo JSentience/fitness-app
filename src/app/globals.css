@@ -1,28 +1,40 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-    --background: #ffffff;
-    --foreground: #171717;
-    --dark-gradient: linear-gradient(116deg, #151720 34.98%, #1e212e 91.5%);
+  --background: #ffffff;
+  --foreground: #171717;
+  --dark-gradient: linear-gradient(116deg, #151720 34.98%, #1e212e 91.5%);
+  --font-sans: 'Roboto', 'Segoe UI', Arial, sans-serif;
+  --font-mono: 'Roboto Mono', 'SFMono-Regular', 'SF Mono', Consolas, monospace;
 }
 
 @theme inline {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --font-sans: var(--font-roboto-sans);
-    --font-mono: var(--font-roboto-mono);
-    --background-image-dark-gradient: var(--dark-gradient);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --background-image-dark-gradient: var(--dark-gradient);
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
-        --background: #ffffff;
-        --foreground: #171717;
-    }
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+  }
 }
 
 body {
-    background: var(--background);
-    color: var(--foreground);
-    font-family: var(--font-sans), Arial, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
